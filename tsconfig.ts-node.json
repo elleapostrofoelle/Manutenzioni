@@ -1,0 +1,25 @@
+// tsconfig.ts-node.json (nella root del progetto)
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS", // CommonJS è solitamente più stabile per ts-node in sviluppo
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noEmit": true, // <--- ts-node transpila in memoria, non emette su disco
+    "types": ["node"] // Qui è corretto includere solo i tipi di Node.js
+  },
+  "include": ["server.ts", "api.ts"], // Solo i file che ts-node deve considerare
+  "exclude": [
+    "node_modules",
+    "dist",
+    "iisnode",
+    "vite.config.ts",
+    "index.tsx",
+    "sw.js",
+    "tsconfig.json",
+    "tsconfig.server.json"
+  ]
+}

@@ -32,12 +32,12 @@ export interface ITask {
   id: string;
   siteId: string;
   description: string;
-  dueDate: string; // Modificato: Solo stringa
+  dueDate: Date | string; // Use string for serialization
   status: TaskStatus;
   assignees: string[];
   type: 'maintenance' | 'odl';
   odlNumber?: string;
-  startDate?: string; // Modificato: Solo stringa
+  startDate?: Date | string; // Use string for serialization
 }
 
 export interface INotification {
@@ -136,9 +136,6 @@ export const deleteTask = async (taskId: string): Promise<void> => {
 };
 
 export const saveSite = async (siteData: ISite): Promise<ISite> => {
-  // Nota: Questo modo di verificare l'esistenza del sito (fetchando tutti i siti)
-  // non è ottimale per le API reali. In un backend vero, useresti un endpoint GET specifico
-  // per ID per verificare, o l'API stessa gestirebbe l'UPSERT basato sull'ID fornito.
   const existingSite = await fetch(`${API_BASE_URL}/sites`).then(r => r.json()).then(sites => sites.find((s: ISite) => s.id === siteData.id));
   
   const method = existingSite ? 'PUT' : 'POST';
@@ -155,7 +152,6 @@ export const saveSite = async (siteData: ISite): Promise<ISite> => {
 };
 
 export const saveUser = async (userData: IUser): Promise<IUser> => {
-  // Stessa nota per la verifica dell'esistenza utente.
   const existingUser = await fetch(`${API_BASE_URL}/users`).then(r => r.json()).then(users => users.find((u: IUser) => u.id === userData.id));
   
   const method = existingUser ? 'PUT' : 'POST';
@@ -170,3 +166,4 @@ export const saveUser = async (userData: IUser): Promise<IUser> => {
   });
   return handleResponse(response);
 };
+

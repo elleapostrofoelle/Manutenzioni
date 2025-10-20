@@ -1,0 +1,31 @@
+// tsconfig.server.json (crea questo file nella root del progetto)
+{
+  "compilerOptions": {
+    "target": "ES2022", // Target moderno per Node.js
+    "module": "CommonJS", // Node.js usa tipicamente CommonJS per i moduli compilati
+    "outDir": "./dist/backend", // <--- L'output compilato del server andrà qui, in una cartella separata!
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true, // Opzionale: genera i file .d.ts
+    "sourceMap": true, // Opzionale: per un debug più facile del JS compilato
+    "types": ["node"] // <--- Qui è corretto includere solo i tipi di Node.js
+  },
+  "include": [
+    "server.ts", // Include il file del server
+    "api.ts"     // api.ts è usato dal backend (per le interfacce), quindi lo compiliamo insieme
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "iisnode",
+    "index.tsx",
+    "vite.config.ts",
+    "sw.js",
+    "tsconfig.json", // Escludi l'altra configurazione di TypeScript
+    "tsconfig.ts-node.json" // Escludi l'altra configurazione di TypeScript
+  ]
+}

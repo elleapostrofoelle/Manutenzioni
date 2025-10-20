@@ -1,0 +1,4 @@
+[dotenv@17.2.3] injecting env (6) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+Application started successfully
+Server in ascolto su http://localhost:\\.\pipe\a1e95e73-b1f1-4c48-b6e0-d373764354d8

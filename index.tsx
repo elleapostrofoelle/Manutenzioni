@@ -1,8 +1,22 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import * as api from './api';
-import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api';
+import * as api from './api.js'; // Assicurati che api.js rifletta i tipi di data come stringhe
+import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.js';
+
+// Global type for BeforeInstallPromptEvent if not already in your environment (e.g., tsconfig lib)
+declare global {
+  interface WindowEventMap {
+    'beforeinstallprompt': BeforeInstallPromptEvent;
+  }
+  interface BeforeInstallPromptEvent extends Event {
+    readonly platforms: Array<string>;
+    readonly userChoice: Promise<{
+      outcome: 'accepted' | 'dismissed',
+      platform: string,
+    }>;
+    prompt(): Promise<void>;
+  }
+}
 
 // --- COMPONENTI UI ---
 
@@ -48,7 +62,8 @@ const Modal = ({ children, onClose }: { children: React.ReactNode; onClose: () =
 
 const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, selectedDate, selectedSiteId }) => {
   const [siteId, setSiteId] = useState(selectedSiteId || sites[0]?.id || '');
-  const [description, setDescription] = useState(maintenanceActivities[0]);
+  const [description, setDescription] = useState(maintenanceActivities[0] || '');
+  const [customDescription, setCustomDescription] = useState('');
   const [assignees, setAssignees] = useState<string[]>([]);
 
   const handleAssigneeChange = (userName: string) => {
@@ -61,14 +76,20 @@ const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, 
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const finalDescription = customDescription.trim() || description;
+
+    if (!finalDescription) {
+        alert('Per favore, inserisci una descrizione per l\'attività.');
+        return;
+    }
     if (assignees.length === 0) {
         alert('Selezionare almeno un assegnatario.');
         return;
     }
     onAddTask({
       siteId,
-      description,
-      dueDate: selectedDate,
+      description: finalDescription,
+      dueDate: selectedDate.toISOString().split('T')[0], // Passa come stringa ISO
       status: 'pending',
       assignees,
       type: 'maintenance',
@@ -90,10 +111,22 @@ const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, 
       </div>
       <div className="form-group">
         <label htmlFor="description">Descrizione Attività</label>
-        <select id="description" value={description} onChange={e => setDescription(e.target.value)} required>
+        <select 
+            id="description" 
+            value={description} 
+            onChange={e => { setDescription(e.target.value); setCustomDescription(''); }} // Reset custom description on select change
+            disabled={!!customDescription.trim()} // Disable if custom description is active
+            required={!customDescription.trim()}
+        >
             {maintenanceActivities.map(activity => <option key={activity} value={activity}>{activity}</option>)}
         </select>
-        <textarea placeholder="O inserisci una descrizione personalizzata..." onChange={e => setDescription(e.target.value)} style={{marginTop: '8px'}} />
+        <textarea 
+            placeholder="O inserisci una descrizione personalizzata..." 
+            value={customDescription}
+            onChange={e => setCustomDescription(e.target.value)} 
+            style={{marginTop: '8px'}} 
+            rows={3}
+        />
       </div>
        <div className="form-group">
         <label>Assegnato a</label>
@@ -143,12 +176,12 @@ const AddODLForm = ({ sites, users, onAddTask, onClose }) => {
         onAddTask({
             siteId,
             description,
-            dueDate: new Date(dueDate),
+            dueDate, // Passa come stringa ISO
             status: 'pending',
             assignees,
             type: 'odl',
             odlNumber,
-            startDate: new Date(startDate),
+            startDate, // Passa come stringa ISO
         });
         onClose();
     };
@@ -267,11 +300,11 @@ const SiteForm = ({ onSaveSite, onClose, siteToEdit }) => {
                     <input id="manager-name" type="text" placeholder="Nome" value={manager.name} onChange={e => setManager(m => ({...m, name: e.target.value}))} />
                 </div>
                 <div className="form-group">
-                     <label htmlFor="manager-phone" style={{opacity: 0}}>Telefono</label>
+                     <label htmlFor="manager-phone" className="sr-only">Telefono</label> {/* Utilizzo di sr-only per accessibilità */}
                     <input id="manager-phone" type="text" placeholder="Telefono" value={manager.phone} onChange={e => setManager(m => ({...m, phone: e.target.value}))} />
                 </div>
                  <div className="form-group">
-                     <label htmlFor="manager-email" style={{opacity: 0}}>Email</label>
+                     <label htmlFor="manager-email" className="sr-only">Email</label> {/* Utilizzo di sr-only per accessibilità */}
                     <input id="manager-email" type="email" placeholder="Email" value={manager.email} onChange={e => setManager(m => ({...m, email: e.target.value}))} />
                 </div>
             </div>
@@ -282,11 +315,11 @@ const SiteForm = ({ onSaveSite, onClose, siteToEdit }) => {
                     <input id="contact-name" type="text" placeholder="Nome" value={contactPerson.name} onChange={e => setContactPerson(c => ({...c, name: e.target.value}))} />
                 </div>
                 <div className="form-group">
-                     <label htmlFor="contact-phone" style={{opacity: 0}}>Telefono</label>
+                     <label htmlFor="contact-phone" className="sr-only">Telefono</label> {/* Utilizzo di sr-only per accessibilità */}
                     <input id="contact-phone" type="text" placeholder="Telefono" value={contactPerson.phone} onChange={e => setContactPerson(c => ({...c, phone: e.target.value}))} />
                 </div>
                  <div className="form-group">
-                     <label htmlFor="contact-email" style={{opacity: 0}}>Email</label>
+                     <label htmlFor="contact-email" className="sr-only">Email</label> {/* Utilizzo di sr-only per accessibilità */}
                     <input id="contact-email" type="email" placeholder="Email" value={contactPerson.email} onChange={e => setContactPerson(c => ({...c, email: e.target.value}))} />
                 </div>
             </div>
@@ -355,12 +388,13 @@ const UserForm = ({ onSaveUser, onClose, userToEdit }) => {
 const TaskDetailsForm = ({ task, sites, users, onUpdateTask, onDeleteTask, onClose }) => {
     const [isEditing, setIsEditing] = useState(false);
     
+    // Converti le date in stringhe ISO 8601 per gli input type="date"
     const [editStatus, setEditStatus] = useState<TaskStatus>(task.status);
     const [editDescription, setEditDescription] = useState(task.description);
-    const [editDueDate, setEditDueDate] = useState(new Date(task.dueDate).toISOString().split('T')[0]);
+    const [editDueDate, setEditDueDate] = useState(task.dueDate); // Già stringa ISO
     const [editAssignees, setEditAssignees] = useState<string[]>(task.assignees);
     const [editOdlNumber, setEditOdlNumber] = useState(task.odlNumber || '');
-    const [editStartDate, setEditStartDate] = useState(task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : '');
+    const [editStartDate, setEditStartDate] = useState(task.startDate || ''); // Già stringa ISO
     
     const site = sites.find(s => s.id === task.siteId);
 
@@ -374,14 +408,14 @@ const TaskDetailsForm = ({ task, sites, users, onUpdateTask, onDeleteTask, onClo
     const handleSaveChanges = () => {
         const updates: Partial<ITask> = {
             description: editDescription,
-            dueDate: new Date(editDueDate),
+            dueDate: editDueDate, // Mantenuta come stringa ISO
             assignees: editAssignees,
             status: editStatus,
         };
 
         if (task.type === 'odl') {
             updates.odlNumber = editOdlNumber;
-            updates.startDate = editStartDate ? new Date(editStartDate) : undefined;
+            updates.startDate = editStartDate || undefined; // Mantenuta come stringa ISO
         }
 
         onUpdateTask(task.id, updates);
@@ -399,10 +433,10 @@ const TaskDetailsForm = ({ task, sites, users, onUpdateTask, onDeleteTask, onClo
     const handleCancelEdit = () => {
         setEditStatus(task.status);
         setEditDescription(task.description);
-        setEditDueDate(new Date(task.dueDate).toISOString().split('T')[0]);
+        setEditDueDate(task.dueDate);
         setEditAssignees(task.assignees);
         setEditOdlNumber(task.odlNumber || '');
-        setEditStartDate(task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : '');
+        setEditStartDate(task.startDate || '');
         setIsEditing(false);
     };
 
@@ -623,6 +657,7 @@ const Resources = ({ users, onAddUserClick, onUserClick }) => (
 
 const ODLView = ({ tasks, sites, onAddODLClick, onTaskClick }) => {
     const odls = tasks.filter(task => task.type === 'odl').sort((a, b) => {
+        // Usa le stringhe direttamente per il confronto o converti in Date
         const dateB = new Date(b.startDate || b.dueDate);
         const dateA = new Date(a.startDate || a.dueDate);
         return dateB.getTime() - dateA.getTime();
@@ -792,7 +827,7 @@ const Schedule = ({ tasks, sites, users, resourceFilter, onResourceFilterChange,
 
   const tasksByDate = useMemo(() => {
     return tasks.reduce((acc, task) => {
-      const dateKey = new Date(task.dueDate).toDateString();
+      const dateKey = new Date(task.dueDate).toDateString(); // Converti stringa in Date per la chiave
       if (!acc[dateKey]) acc[dateKey] = [];
       acc[dateKey].push(task);
       return acc;
@@ -876,7 +911,7 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
             groupedTasks[site.id] = {};
         });
         tasks.forEach(task => {
-            const taskDueDate = new Date(task.dueDate);
+            const taskDueDate = new Date(task.dueDate); // Converti stringa in Date per il confronto
             if (taskDueDate.getMonth() === currentDate.getMonth() && taskDueDate.getFullYear() === currentDate.getFullYear()) {
                 const date = taskDueDate.getDate();
                 if (!groupedTasks[task.siteId]) groupedTasks[task.siteId] = {};
@@ -1053,6 +1088,7 @@ const GanttView = ({ tasks, sites, onTaskClick }) => {
 
 // --- HELPERS ---
 const getTaskInterval = (task: ITask): { start: Date, end: Date } => {
+    // Le date in task sono già stringhe ISO, le convertiamo per la manipolazione
     const start = task.startDate ? new Date(task.startDate) : new Date(task.dueDate);
     start.setHours(0, 0, 0, 0); // Normalize to start of day
     const end = new Date(task.dueDate);
@@ -1070,8 +1106,9 @@ const checkAssignmentConflicts = (
     const { start: newStart, end: newEnd } = newTaskInterval;
 
     for (const assignee of newAssignees) {
+        // Filtra solo i task non completati e non il task che stiamo modificando/aggiungendo
         const assignedTasks = allTasks.filter(
-            t => t.id !== currentTaskId && t.assignees.includes(assignee)
+            t => t.id !== currentTaskId && t.assignees.includes(assignee) && t.status !== 'completed'
         );
 
         for (const task of assignedTasks) {
@@ -1104,7 +1141,7 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [modalConfig, setModalConfig] = useState<{ type: string | null; data?: any }>({ type: null });
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null); // Tipizzato correttamente
   
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(() => {
     try {
@@ -1161,7 +1198,7 @@ const App = () => {
 
         tasks.forEach(task => {
             if (task.status !== 'completed') {
-                const dueDate = new Date(task.dueDate);
+                const dueDate = new Date(task.dueDate); // Converti la stringa in Date per il confronto
                 const notificationId = `notif-${task.id}`;
 
                 if (dueDate < todayStart) { // Overdue
@@ -1211,7 +1248,7 @@ const App = () => {
             });
         }
 
-        const handleBeforeInstallPrompt = (e: Event) => {
+        const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => { // Tipizzato correttamente
             e.preventDefault();
             setInstallPrompt(e);
         };
@@ -1244,7 +1281,7 @@ const App = () => {
 
   const closeModal = () => setModalConfig({ type: null });
   
-  const handleAddTask = async (taskData: Omit<ITask, 'id' | 'dueDate'> & { dueDate: Date }) => {
+  const handleAddTask = async (taskData: Omit<ITask, 'id'>) => { // taskData ha già dueDate e startDate come stringhe
         const { startDate, dueDate, assignees } = taskData;
         const newTaskInterval = {
             start: startDate ? new Date(startDate) : new Date(dueDate),
@@ -1287,6 +1324,7 @@ const App = () => {
     const originalTask = tasks.find(t => t.id === taskId);
     if (!originalTask) return;
 
+    // Crea un oggetto task aggiornato per il controllo dei conflitti
     const updatedTaskData = { ...originalTask, ...updates } as ITask;
     const { startDate, dueDate, assignees } = updatedTaskData;
     const updatedTaskInterval = {
@@ -1397,7 +1435,7 @@ const App = () => {
                 maintenanceActivities={maintenanceActivities} 
                 onAddTask={handleAddTask} 
                 onClose={closeModal} 
-                selectedDate={modalConfig.data.selectedDate} 
+                selectedDate={modalConfig.data.selectedDate} // selectedDate è un oggetto Date qui
                 selectedSiteId={modalConfig.data.selectedSiteId}
             />;
         
