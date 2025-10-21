@@ -10,7 +10,7 @@
     "clean:backend": "rimraf ./dist/backend",
     "build:backend": "npm run clean:backend && tsc --project tsconfig.server.json",
     "start:backend": "node app.js",
-    "dev:backend": "nodemon --watch server.ts --watch api.ts --exec ts-node --project tsconfig.ts-node.json server.ts",
+    "dev:backend": "nodemon --watch server.ts --watch api.ts --watch dev-server.ts --exec ts-node --project tsconfig.ts-node.json dev-server.ts",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "build": "npm run build:frontend && npm run build:backend"
   },

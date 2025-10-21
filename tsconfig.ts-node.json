@@ -11,7 +11,7 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["server.ts", "api.ts"],
+  "include": ["server.ts", "api.ts", "dev-server.ts"],
   "exclude": [
     "node_modules",
     "dist",
