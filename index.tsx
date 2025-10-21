@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import * as api from './api.ts'; // Modificato da api.js a api.ts
-import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.ts'; // Modificato da api.js a api.ts
+import * as api from './api.ts';
+import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.ts';
 
 // Global type for BeforeInstallPromptEvent if not already in your environment (e.g., tsconfig lib)
 declare global {
@@ -1392,72 +1392,102 @@ const App = () => {
   const closeModal = () => setModalConfig({ type: null });
   
   const handleAddTask = async (taskData: Omit<ITask, 'id'>) => { // taskData ha già dueDate e startDate come stringhe
-        const { startDate, dueDate, assignees } = taskData;
-        const newTaskInterval = {
-            start: startDate ? new Date(startDate) : new Date(dueDate),
-            end: new Date(dueDate)
-        };
-        newTaskInterval.start.setHours(0,0,0,0);
-        newTaskInterval.end.setHours(23,59,59,999);
+        try {
+            const { startDate, dueDate, assignees } = taskData;
+            const newTaskInterval = {
+                start: startDate ? new Date(startDate) : new Date(dueDate),
+                end: new Date(dueDate)
+            };
+            newTaskInterval.start.setHours(0,0,0,0);
+            newTaskInterval.end.setHours(23,59,59,999);
 
-        const conflictingAssignees = checkAssignmentConflicts(assignees, newTaskInterval, tasks, null);
-        
-        if (conflictingAssignees.length > 0) {
-            const proceed = window.confirm(`Attenzione: Le seguenti risorse hanno già impegni concomitanti:\n\n- ${conflictingAssignees.join('\n- ')}\n\nVuoi procedere comunque?`);
-            if (!proceed) return;
+            const conflictingAssignees = checkAssignmentConflicts(assignees, newTaskInterval, tasks, null);
+            
+            if (conflictingAssignees.length > 0) {
+                const proceed = window.confirm(`Attenzione: Le seguenti risorse hanno già impegni concomitanti:\n\n- ${conflictingAssignees.join('\n- ')}\n\nVuoi procedere comunque?`);
+                if (!proceed) return;
+            }
+            const savedTask = await api.addTask(taskData);
+            setTasks(prevTasks => [...prevTasks, savedTask].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
+            setError(null); // Clear any previous error
+        } catch (err: any) {
+            setError(`Errore nell'aggiunta dell'attività: ${err.message}`);
+            console.error("Error adding task:", err);
         }
-      const savedTask = await api.addTask(taskData);
-      setTasks(prevTasks => [...prevTasks, savedTask].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
   };
   
   const handleSaveSite = async (site: ISite) => {
-    const savedSite = await api.saveSite(site);
-    const siteExists = sites.some((s: ISite) => s.id === savedSite.id);
-    if (siteExists) {
-        setSites(sites.map((s: ISite) => s.id === savedSite.id ? savedSite : s));
-    } else {
-        setSites(prevSites => [...prevSites, savedSite]);
+    try {
+        const savedSite = await api.saveSite(site);
+        const siteExists = sites.some((s: ISite) => s.id === savedSite.id);
+        if (siteExists) {
+            setSites(sites.map((s: ISite) => s.id === savedSite.id ? savedSite : s));
+        } else {
+            setSites(prevSites => [...prevSites, savedSite]);
+        }
+        setError(null); // Clear any previous error
+    } catch (err: any) {
+        setError(`Errore nel salvataggio del sito: ${err.message}`);
+        console.error("Error saving site:", err);
     }
   };
 
   const handleSaveUser = async (user: IUser) => {
-    const savedUser = await api.saveUser(user);
-    const userExists = users.some((u: IUser) => u.id === savedUser.id);
-    if (userExists) {
-      setUsers(users.map((u: IUser) => u.id === savedUser.id ? savedUser : u));
-    } else {
-      setUsers(prevUsers => [...prevUsers, savedUser]);
+    try {
+        const savedUser = await api.saveUser(user);
+        const userExists = users.some((u: IUser) => u.id === savedUser.id);
+        if (userExists) {
+        setUsers(users.map((u: IUser) => u.id === savedUser.id ? savedUser : u));
+        } else {
+        setUsers(prevUsers => [...prevUsers, savedUser]);
+        }
+        setError(null); // Clear any previous error
+    } catch (err: any) {
+        setError(`Errore nel salvataggio dell'utente: ${err.message}`);
+        console.error("Error saving user:", err);
     }
   };
   
   const handleUpdateTask = async (taskId: string, updates: Partial<ITask>) => {
-    const originalTask = tasks.find((t: ITask) => t.id === taskId);
-    if (!originalTask) return;
+    try {
+        const originalTask = tasks.find((t: ITask) => t.id === taskId);
+        if (!originalTask) return;
 
-    // Crea un oggetto task aggiornato per il controllo dei conflitti
-    const updatedTaskData = { ...originalTask, ...updates } as ITask;
-    const { startDate, dueDate, assignees } = updatedTaskData;
-    const updatedTaskInterval = {
-        start: startDate ? new Date(startDate) : new Date(dueDate),
-        end: new Date(dueDate)
-    };
-    updatedTaskInterval.start.setHours(0,0,0,0);
-    updatedTaskInterval.end.setHours(23,59,59,999);
-    
-    const conflictingAssignees = checkAssignmentConflicts(assignees, updatedTaskInterval, tasks, taskId);
-    
-    if (conflictingAssignees.length > 0) {
-        const proceed = window.confirm(`Attenzione: Aggiornando questa attività si creano conflitti di pianificazione per:\n\n- ${conflictingAssignees.join('\n- ')}\n\nVuoi salvare le modifiche comunque?`);
-        if (!proceed) return;
+        // Crea un oggetto task aggiornato per il controllo dei conflitti
+        const updatedTaskData = { ...originalTask, ...updates } as ITask;
+        const { startDate, dueDate, assignees } = updatedTaskData;
+        const updatedTaskInterval = {
+            start: startDate ? new Date(startDate) : new Date(dueDate),
+            end: new Date(dueDate)
+        };
+        updatedTaskInterval.start.setHours(0,0,0,0);
+        updatedTaskInterval.end.setHours(23,59,59,999);
+        
+        const conflictingAssignees = checkAssignmentConflicts(assignees, updatedTaskInterval, tasks, taskId);
+        
+        if (conflictingAssignees.length > 0) {
+            const proceed = window.confirm(`Attenzione: Aggiornando questa attività si creano conflitti di pianificazione per:\n\n- ${conflictingAssignees.join('\n- ')}\n\nVuoi salvare le modifiche comunque?`);
+            if (!proceed) return;
+        }
+        
+        const updatedTask = await api.updateTask(taskId, updates);
+        setTasks(tasks.map((t: ITask) => t.id === taskId ? updatedTask : t));
+        setError(null); // Clear any previous error
+    } catch (err: any) {
+        setError(`Errore nell'aggiornamento dell'attività: ${err.message}`);
+        console.error("Error updating task:", err);
     }
-    
-    const updatedTask = await api.updateTask(taskId, updates);
-    setTasks(tasks.map((t: ITask) => t.id === taskId ? updatedTask : t));
   };
 
   const handleDeleteTask = async (taskId: string) => {
-      await api.deleteTask(taskId);
-      setTasks(tasks.filter((t: ITask) => t.id !== taskId));
+      try {
+          await api.deleteTask(taskId);
+          setTasks(tasks.filter((t: ITask) => t.id !== taskId));
+          setError(null); // Clear any previous error
+      } catch (err: any) {
+          setError(`Errore nell'eliminazione dell'attività: ${err.message}`);
+          console.error("Error deleting task:", err);
+      }
   };
 
   const handleAddTaskClick = (date: Date, siteId?: string) => {
