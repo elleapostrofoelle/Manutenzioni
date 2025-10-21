@@ -1072,6 +1072,7 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
                                 const cellTasks = tasksBySiteAndDate[site.id]?.[dayNumber] || []; // <--- CORREZIONE QUI
                                 return (
                                     <div key={`${site.id}-${dayNumber}`} className={`matrix-cell ${day.getDay() === 0 || day.getDay() === 6 ? 'weekend' : ''}`}>
+                                        <span className="matrix-cell-day-number">{day.getDate()}</span> {/* Aggiunto il numero del giorno qui */}
                                         <button className="add-task-btn" onClick={() => onAddTaskClick(day, site.id)}>+</button>
                                         {cellTasks.map((task: ITask) => (
                                             <div

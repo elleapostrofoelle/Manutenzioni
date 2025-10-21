@@ -568,6 +568,13 @@ body {
     background-color: var(--background-color);
 }
 
+.matrix-cell-day-number { /* Nuovo stile per il numero del giorno nelle celle */
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
 
 .matrix-header {
     font-weight: 600;
