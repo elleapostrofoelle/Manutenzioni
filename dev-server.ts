@@ -1,4 +1,4 @@
-import app from './server'; // Importa l'applicazione Express da server.ts
+import app from './server.ts'; // Importa l'applicazione Express da server.ts
 import dotenv from 'dotenv';
 dotenv.config();
 
