@@ -137,7 +137,7 @@ app.post('/api/sites', async (req, res) => {
       contactPerson: site.contactPerson || {},
       otherContacts: site.otherContacts || [],
     };
-    console.log('Site data prepared for Supabase insert:', siteToInsert); // Log per debug
+    console.log('Site data prepared for Supabase insert:', JSON.stringify(siteToInsert, null, 2)); // Log dettagliato
     const { data, error } = await supabase.from('sites').insert([siteToInsert]).select().single();
     if (error) {
       console.error('Supabase insert error for site:', error); // Log dettagliato dell'errore Supabase
@@ -161,7 +161,7 @@ app.put('/api/sites/:id', async (req, res) => {
       contactPerson: site.contactPerson || {},
       otherContacts: site.otherContacts || [],
     };
-    console.log('Site data prepared for Supabase update:', siteToUpdate); // Log per debug
+    console.log('Site data prepared for Supabase update:', JSON.stringify(siteToUpdate, null, 2)); // Log dettagliato
     const { data, error } = await supabase.from('sites').update(siteToUpdate).eq('id', req.params.id).select().single();
     if (error) {
       console.error('Supabase update error for site:', error); // Log dettagliato dell'errore Supabase
