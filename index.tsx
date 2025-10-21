@@ -998,48 +998,96 @@ interface MatrixViewProps {
 
 const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChange, onTaskClick, onAddTaskClick }: MatrixViewProps) => {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [viewMode, setViewMode] = useState<'month' | 'week'>('month'); // Nuovo stato per la modalità di visualizzazione
 
-    const daysInMonth = useMemo(() => {
-        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const daysInView = useMemo(() => {
         const days: Date[] = [];
-        while (date.getMonth() === currentDate.getMonth()) {
-            days.push(new Date(date));
-            date.setDate(date.getDate() + 1);
+        if (viewMode === 'month') {
+            const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            while (date.getMonth() === currentDate.getMonth()) {
+                days.push(new Date(date));
+                date.setDate(date.getDate() + 1);
+            }
+        } else { // 'week' view
+            const startOfWeek = new Date(currentDate);
+            // Imposta la data al lunedì della settimana corrente
+            startOfWeek.setDate(currentDate.getDate() - (currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1)); 
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            for (let i = 0; i < 7; i++) {
+                const day = new Date(startOfWeek);
+                day.setDate(startOfWeek.getDate() + i);
+                days.push(day);
+            }
         }
         return days;
-    }, [currentDate]);
+    }, [currentDate, viewMode]);
 
     const tasksBySiteAndDate = useMemo(() => {
-        const groupedTasks: Record<string, Record<number, ITask[]>> = {};
+        const groupedTasks: Record<string, Record<string, ITask[]>> = {}; 
         sites.forEach((site: ISite) => {
             groupedTasks[site.id] = {};
         });
+
+        const viewStart = daysInView[0];
+        const viewEnd = new Date(daysInView[daysInView.length - 1]);
+        viewEnd.setHours(23, 59, 59, 999); 
+
         tasks.forEach((task: ITask) => {
-            const taskDueDate = new Date(task.dueDate); // Converti stringa in Date per il confronto
-            if (taskDueDate.getMonth() === currentDate.getMonth() && taskDueDate.getFullYear() === currentDate.getFullYear()) {
-                const date = taskDueDate.getDate();
+            const taskDueDate = new Date(task.dueDate);
+            taskDueDate.setHours(0, 0, 0, 0); 
+
+            if (taskDueDate >= viewStart && taskDueDate <= viewEnd) {
+                const dateKey = taskDueDate.toDateString(); 
                 if (!groupedTasks[task.siteId]) groupedTasks[task.siteId] = {};
-                if (!groupedTasks[task.siteId][date]) {
-                    groupedTasks[task.siteId][date] = [];
+                if (!groupedTasks[task.siteId][dateKey]) {
+                    groupedTasks[task.siteId][dateKey] = [];
                 }
-                groupedTasks[task.siteId][date].push(task);
+                groupedTasks[task.siteId][dateKey].push(task);
             }
         });
         return groupedTasks;
-    }, [tasks, sites, currentDate]);
+    }, [tasks, sites, daysInView]);
 
-    const changeMonth = (offset: number) => {
-        setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
+    const changePeriod = (offset: number) => {
+        setCurrentDate(prev => {
+            const newDate = new Date(prev);
+            if (viewMode === 'month') {
+                newDate.setMonth(prev.getMonth() + offset);
+            } else { // 'week' view
+                newDate.setDate(prev.getDate() + (offset * 7));
+            }
+            return newDate;
+        });
     };
 
     return (
         <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
             <div className="header"><h1>Vista a Matrice</h1></div>
             <div className="schedule-controls">
+                <div className="view-mode-selector"> {/* Nuovi pulsanti per la selezione della modalità */}
+                    <button 
+                        className={`filter-btn ${viewMode === 'month' ? 'active' : ''}`} 
+                        onClick={() => setViewMode('month')}
+                    >
+                        Mese
+                    </button>
+                    <button 
+                        className={`filter-btn ${viewMode === 'week' ? 'active' : ''}`} 
+                        onClick={() => setViewMode('week')}
+                    >
+                        Settimana
+                    </button>
+                </div>
                 <div className="month-navigator">
-                    <button onClick={() => changeMonth(-1)}>&lt;</button>
-                    <h2>{currentDate.toLocaleString('it-IT', { month: 'long', year: 'numeric' })}</h2>
-                    <button onClick={() => changeMonth(1)}>&gt;</button>
+                    <button onClick={() => changePeriod(-1)}>&lt;</button>
+                    <h2>
+                        {viewMode === 'month'
+                            ? currentDate.toLocaleString('it-IT', { month: 'long', year: 'numeric' })
+                            : `${daysInView[0].toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} - ${daysInView[6].toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                        }
+                    </h2>
+                    <button onClick={() => changePeriod(1)}>&gt;</button>
                 </div>
                 <div className="resource-filter">
                     <label htmlFor="resource-filter-matrix">Risorsa:</label>
@@ -1056,10 +1104,10 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
                 </div>
             </div>
             <div className="matrix-container">
-                <div className="matrix-grid" style={{ gridTemplateColumns: `minmax(200px, 1.5fr) repeat(${daysInMonth.length}, minmax(150px, 1fr))` }}>
+                <div className="matrix-grid" style={{ gridTemplateColumns: `minmax(200px, 1.5fr) repeat(${daysInView.length}, minmax(150px, 1fr))` }}>
                     <div className="matrix-cell matrix-header sticky-top sticky-left">Sito</div>
-                    {daysInMonth.map((day: Date) => (
-                        <div key={`header-${day.getDate()}`} className={`matrix-cell matrix-header sticky-top ${day.getDay() === 0 || day.getDay() === 6 ? 'weekend' : ''}`}>
+                    {daysInView.map((day: Date) => (
+                        <div key={`header-${day.toDateString()}`} className={`matrix-cell matrix-header sticky-top ${day.getDay() === 0 || day.getDay() === 6 ? 'weekend' : ''}`}>
                             <span className="matrix-day-name">{day.toLocaleDateString('it-IT', { weekday: 'short' })}</span>
                             <span className="matrix-day-number">{day.getDate()}</span>
                         </div>
@@ -1067,12 +1115,13 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
                     {sites.map((site: ISite) => (
                         <React.Fragment key={site.id}>
                             <div className="matrix-cell matrix-site-header sticky-left">{site.name}</div>
-                            {daysInMonth.map((day: Date) => {
-                                const dayNumber = day.getDate();
-                                const cellTasks = tasksBySiteAndDate[site.id]?.[dayNumber] || []; // <--- CORREZIONE QUI
+                            {daysInView.map((day: Date) => {
+                                const dateKey = day.toDateString();
+                                const cellTasks = tasksBySiteAndDate[site.id]?.[dateKey] || [];
+                                const isWeekend = day.getDay() === 0 || day.getDay() === 6; // Sunday (0) or Saturday (6)
                                 return (
-                                    <div key={`${site.id}-${dayNumber}`} className={`matrix-cell ${day.getDay() === 0 || day.getDay() === 6 ? 'weekend' : ''}`}>
-                                        <span className="matrix-cell-day-number">{day.getDate()}</span> {/* Aggiunto il numero del giorno qui */}
+                                    <div key={`${site.id}-${dateKey}`} className={`matrix-cell ${isWeekend ? 'weekend' : ''}`}>
+                                        <span className="matrix-cell-day-number">{day.getDate()}</span> 
                                         <button className="add-task-btn" onClick={() => onAddTaskClick(day, site.id)}>+</button>
                                         {cellTasks.map((task: ITask) => (
                                             <div

@@ -456,12 +456,6 @@ body {
 .calendar-day.other-month .day-number {
   color: var(--text-light);
 }
-
-.calendar-day .day-number {
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-}
 .calendar-day.today .day-number {
     background-color: var(--primary-color);
     color: white;
@@ -1256,4 +1250,16 @@ body {
     background-color: var(--primary-color);
     color: #fff;
     border-color: var(--primary-color);
+}
+
+/* New styles for view mode selector */
+.view-mode-selector {
+    display: flex;
+    gap: 0.5rem;
+    grid-column: 1 / 2; /* Posiziona a sinistra */
+    justify-self: start;
+}
+.view-mode-selector .filter-btn {
+    min-width: 80px;
+    text-align: center;
 }
