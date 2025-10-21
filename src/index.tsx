@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import * as api from '@/api.ts'; // Modificato per usare l'alias
-import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from '@/api.ts'; // Modificato per usare l'alias
+import * as api from './api.ts'; // Modificato per usare il percorso relativo
+import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.ts'; // Modificato per usare il percorso relativo
 
 // Global type for BeforeInstallPromptEvent if not already in your environment (e.g., tsconfig lib)
 declare global {
@@ -96,7 +96,7 @@ const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, 
     const finalDescription = customDescription.trim() || description;
 
     if (!finalDescription) {
-        alert('Per favore, inserisci una descrizione per l\'attività.');
+        alert('Per favor, inserisci una descrizione per l\'attività.');
         return;
     }
     if (assignees.length === 0) {
