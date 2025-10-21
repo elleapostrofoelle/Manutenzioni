@@ -130,12 +130,15 @@ app.post('/api/sites', async (req, res) => {
   try {
     const site: ISite = req.body;
     console.log('Received site for insert:', req.body); // Log per debug
-    // Ensure JSONB fields are not null for Supabase
+    // Map camelCase from frontend to lowercase for Supabase column names
     const siteToInsert = {
-      ...site,
-      manager: site.manager || {},
-      contactPerson: site.contactPerson || {},
-      otherContacts: site.otherContacts || [],
+      id: site.id,
+      name: site.name,
+      address: site.address,
+      manager: site.manager && site.manager.name ? site.manager : {}, // Ensure manager is an object
+      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Use lowercase 'contactperson'
+      landline: site.landline || '',
+      othercontacts: site.otherContacts || [], // Use lowercase 'othercontacts'
     };
     console.log('Site data prepared for Supabase insert:', JSON.stringify(siteToInsert, null, 2)); // Log dettagliato
     const { data, error } = await supabase.from('sites').insert([siteToInsert]).select().single();
@@ -154,12 +157,14 @@ app.put('/api/sites/:id', async (req, res) => {
   try {
     const site: Partial<ISite> = req.body;
     console.log('Received site for update:', req.body); // Log per debug
-    // Ensure JSONB fields are not null for Supabase
+    // Map camelCase from frontend to lowercase for Supabase column names
     const siteToUpdate = {
-      ...site,
-      manager: site.manager || {},
-      contactPerson: site.contactPerson || {},
-      otherContacts: site.otherContacts || [],
+      name: site.name,
+      address: site.address,
+      manager: site.manager && site.manager.name ? site.manager : {}, // Ensure manager is an object
+      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Use lowercase 'contactperson'
+      landline: site.landline || '',
+      othercontacts: site.otherContacts || [], // Use lowercase 'othercontacts'
     };
     console.log('Site data prepared for Supabase update:', JSON.stringify(siteToUpdate, null, 2)); // Log dettagliato
     const { data, error } = await supabase.from('sites').update(siteToUpdate).eq('id', req.params.id).select().single();
@@ -289,7 +294,19 @@ app.get('/api/tasks/:id', async (req, res) => {
 app.post('/api/tasks', async (req, res) => {
   try {
     const task: ITask = req.body;
-    const { data, error } = await supabase.from('tasks').insert([task]).select().single();
+    // Map camelCase from frontend to lowercase for Supabase column names
+    const taskToInsert = {
+      id: task.id,
+      siteid: task.siteId, // Use lowercase 'siteid'
+      description: task.description,
+      duedate: task.dueDate, // Use lowercase 'duedate'
+      status: task.status,
+      assignees: task.assignees,
+      type: task.type,
+      odlnumber: task.odlNumber, // Use lowercase 'odlnumber'
+      startdate: task.startDate, // Use lowercase 'startdate'
+    };
+    const { data, error } = await supabase.from('tasks').insert([taskToInsert]).select().single();
     if (error) {
       console.error('Supabase insert error for task:', error); // Log dettagliato dell'errore Supabase
       throw error;
@@ -304,7 +321,20 @@ app.post('/api/tasks', async (req, res) => {
 app.put('/api/tasks/:id', async (req, res) => {
   try {
     const task: Partial<ITask> = req.body;
-    const { data, error } = await supabase.from('tasks').update(task).eq('id', req.params.id).select().single();
+    // Map camelCase from frontend to lowercase for Supabase column names
+    const taskToUpdate: Partial<ITask> = {
+      description: task.description,
+      status: task.status,
+      assignees: task.assignees,
+      type: task.type,
+    };
+    // Conditionally add fields that might be undefined
+    if (task.siteId !== undefined) (taskToUpdate as any).siteid = task.siteId;
+    if (task.dueDate !== undefined) (taskToUpdate as any).duedate = task.dueDate;
+    if (task.odlNumber !== undefined) (taskToUpdate as any).odlnumber = task.odlNumber;
+    if (task.startDate !== undefined) (taskToUpdate as any).startdate = task.startDate;
+
+    const { data, error } = await supabase.from('tasks').update(taskToUpdate).eq('id', req.params.id).select().single();
     if (error) {
       console.error('Supabase update error for task:', error); // Log dettagliato dell'errore Supabase
       throw error;
