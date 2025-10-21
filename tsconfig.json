@@ -1,41 +1,34 @@
-// tsconfig.json (nella root del progetto)
 {
   "compilerOptions": {
-    "target": "ESNext", // Target moderno per il browser
-    "useDefineForClassFields": true, // Consigliato con Vite/React
-    "lib": ["DOM", "DOM.Iterable", "ESNext"], // Librerie per browser e funzionalità JS moderne
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": false,
     "skipLibCheck": true,
-    "esModuleInterop": true,
+    "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
-    "strict": true, // Manteniamo la modalità strict per una maggiore robustezza
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "ESNext", // Moduli ES per il browser (Vite li gestirà)
-    "moduleResolution": "bundler", // Strategia di risoluzione moduli ottimizzata per bundler (Vite)
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "moduleDetection": "force",
-    "allowJs": true, // Permette l'inclusione di file .js nel frontend (es. sw.js se non è .ts)
-    "jsx": "react-jsx", // Supporto per JSX
-    "paths": { "@/*": ["./*"] },
-    "noEmit": true, // <--- CRUCIALE: Dice a TypeScript di non generare file JS per il frontend
-    // Rimosso "outDir" perché "noEmit" è true
-    // Rimosso "types": ["node"] per permettere a TypeScript di includere @types/react, @types/react-dom, ecc.
-    "types": ["vite/client"] // Importante per i tipi specifici di Vite
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": [
-    "index.tsx",
-    "api.ts", // api.ts è usato anche dal frontend
-    "vite.config.ts",
-    "sw.js", // Se è JavaScript, `allowJs` lo include; se fosse `sw.ts` lo includeresti qui.
-    "public/**/*.d.ts" // Per qualsiasi file di definizione di tipo nel folder public
-  ],
+  "include": ["src", "index.css", "sw.js"],
   "exclude": [
     "node_modules",
     "dist",
     "iisnode",
-    "server.ts", // <--- Escludi esplicitamente il file del server da questa configurazione
-    "tsconfig.server.json", // Escludi l'altra configurazione di TypeScript
-    "tsconfig.ts-node.json", // Escludi l'altra configurazione di TypeScript
-    "*.js" // Esclude file JS nella root che non sono gestiti da TypeScript come sorgenti
-  ]
+    "server.ts",
+    "dev-server.ts",
+    "test-db-connection.ts",
+    "tsconfig.server.json",
+    "tsconfig.ts-node.json"
+  ],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

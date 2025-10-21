@@ -11,13 +11,13 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["server.ts", "api.ts", "dev-server.ts"],
+  "include": ["server.ts", "src/api.ts", "dev-server.ts"],
   "exclude": [
     "node_modules",
     "dist",
     "iisnode",
     "vite.config.ts",
-    "index.tsx",
+    "src/index.tsx",
     "sw.js",
     "tsconfig.json",
     "tsconfig.server.json"

@@ -1,32 +1,32 @@
 {
   "compilerOptions": {
-    "target": "ES2022", // Target moderno per Node.js
-    "module": "NodeNext", // <--- Modificato a NodeNext per coerenza con moduleResolution
-    "moduleResolution": "NodeNext", // Risoluzione dei moduli per Node.js
-    "outDir": "./dist/backend", // <--- L'output compilato del server andrà qui, in una cartella separata!
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist/backend",
     "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true, // Permette importazioni default sintetiche
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true, // Opzionale: genera i file .d.ts
-    "sourceMap": true, // Opzionale: per un debug più facile del JS compilato
-    "types": ["node"] // <--- Qui è corretto includere solo i tipi di Node.js
+    "declaration": true,
+    "sourceMap": true,
+    "types": ["node"]
   },
   "include": [
-    "server.ts", // Include il file del server
-    "api.ts"     // api.ts è usato dal backend (per le interfacce), quindi lo compiliamo insieme
+    "server.ts",
+    "api.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "iisnode",
-    "index.tsx",
+    "src",
     "vite.config.ts",
     "sw.js",
-    "tsconfig.json", // Escludi l'altra configurazione di TypeScript
-    "tsconfig.ts-node.json" // Escludi l'altra configurazione di TypeScript
+    "tsconfig.json",
+    "tsconfig.ts-node.json"
   ]
 }
