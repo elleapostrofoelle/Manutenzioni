@@ -130,15 +130,15 @@ app.post('/api/sites', async (req, res) => {
   try {
     const site: ISite = req.body;
     console.log('Received site for insert:', req.body); // Log per debug
-    // Map camelCase from frontend to lowercase for Supabase column names
+    // Utilizza i nomi delle colonne camelCase come nell'interfaccia
     const siteToInsert = {
       id: site.id,
       name: site.name,
       address: site.address,
-      manager: site.manager && site.manager.name ? site.manager : {}, // Ensure manager is an object
-      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Use lowercase 'contactperson'
+      manager: site.manager && site.manager.name ? site.manager : {}, 
+      contactPerson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, 
       landline: site.landline || '',
-      othercontacts: site.otherContacts || [], // Use lowercase 'othercontacts'
+      otherContacts: site.otherContacts || [], 
     };
     console.log('Site data prepared for Supabase insert:', JSON.stringify(siteToInsert, null, 2)); // Log dettagliato
     const { data, error } = await supabase.from('sites').insert([siteToInsert]).select().single();
@@ -157,14 +157,14 @@ app.put('/api/sites/:id', async (req, res) => {
   try {
     const site: Partial<ISite> = req.body;
     console.log('Received site for update:', req.body); // Log per debug
-    // Map camelCase from frontend to lowercase for Supabase column names
+    // Utilizza i nomi delle colonne camelCase come nell'interfaccia
     const siteToUpdate = {
       name: site.name,
       address: site.address,
-      manager: site.manager && site.manager.name ? site.manager : {}, // Ensure manager is an object
-      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Use lowercase 'contactperson'
+      manager: site.manager && site.manager.name ? site.manager : {}, 
+      contactPerson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, 
       landline: site.landline || '',
-      othercontacts: site.otherContacts || [], // Use lowercase 'othercontacts'
+      otherContacts: site.otherContacts || [], 
     };
     console.log('Site data prepared for Supabase update:', JSON.stringify(siteToUpdate, null, 2)); // Log dettagliato
     const { data, error } = await supabase.from('sites').update(siteToUpdate).eq('id', req.params.id).select().single();
@@ -294,17 +294,17 @@ app.get('/api/tasks/:id', async (req, res) => {
 app.post('/api/tasks', async (req, res) => {
   try {
     const task: ITask = req.body;
-    // Map camelCase from frontend to lowercase for Supabase column names
+    // Utilizza i nomi delle colonne camelCase come nell'interfaccia
     const taskToInsert = {
       id: task.id,
-      siteid: task.siteId, // Use lowercase 'siteid'
+      siteId: task.siteId, 
       description: task.description,
-      duedate: task.dueDate, // Use lowercase 'duedate'
+      dueDate: task.dueDate, 
       status: task.status,
       assignees: task.assignees,
       type: task.type,
-      odlnumber: task.odlNumber, // Use lowercase 'odlnumber'
-      startdate: task.startDate, // Use lowercase 'startdate'
+      odlNumber: task.odlNumber, 
+      startDate: task.startDate, 
     };
     const { data, error } = await supabase.from('tasks').insert([taskToInsert]).select().single();
     if (error) {
@@ -321,7 +321,7 @@ app.post('/api/tasks', async (req, res) => {
 app.put('/api/tasks/:id', async (req, res) => {
   try {
     const task: Partial<ITask> = req.body;
-    // Map camelCase from frontend to lowercase for Supabase column names
+    // Utilizza i nomi delle colonne camelCase come nell'interfaccia
     const taskToUpdate: Partial<ITask> = {
       description: task.description,
       status: task.status,
@@ -329,10 +329,10 @@ app.put('/api/tasks/:id', async (req, res) => {
       type: task.type,
     };
     // Conditionally add fields that might be undefined
-    if (task.siteId !== undefined) (taskToUpdate as any).siteid = task.siteId;
-    if (task.dueDate !== undefined) (taskToUpdate as any).duedate = task.dueDate;
-    if (task.odlNumber !== undefined) (taskToUpdate as any).odlnumber = task.odlNumber;
-    if (task.startDate !== undefined) (taskToUpdate as any).startdate = task.startDate;
+    if (task.siteId !== undefined) (taskToUpdate as any).siteId = task.siteId;
+    if (task.dueDate !== undefined) (taskToUpdate as any).dueDate = task.dueDate;
+    if (task.odlNumber !== undefined) (taskToUpdate as any).odlNumber = task.odlNumber;
+    if (task.startDate !== undefined) (taskToUpdate as any).startDate = task.startDate;
 
     const { data, error } = await supabase.from('tasks').update(taskToUpdate).eq('id', req.params.id).select().single();
     if (error) {
