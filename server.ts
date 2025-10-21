@@ -5,19 +5,53 @@ import type { Request, Response, NextFunction } from 'express';
 import mysql from 'mysql2/promise';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path'; // Importa il modulo path
+import { fileURLToPath } from 'url'; // Importa fileURLToPath per ottenere __dirname in ES modules
+import fs from 'fs'; // Importa il modulo fs per controllare l'esistenza dei file
 
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let projectRoot: string;
+
+// Check if we are running the compiled JS from dist/backend or the TS source directly
+if (__dirname.includes(path.join('dist', 'backend'))) {
+  // Running compiled JS (e.g., in production via `node app.js`)
+  // __dirname is /path/to/project/dist/backend
+  // We need to go up two levels to get to /path/to/project
+  projectRoot = path.resolve(__dirname, '../../');
+} else {
+  // Running TS source directly (e.g., in development via `ts-node server.ts`)
+  // __dirname is /path/to/project
+  projectRoot = __dirname;
+}
+
+console.log('Server __dirname:', __dirname);
+console.log('Calculated projectRoot:', projectRoot);
+console.log('Serving static files from:', path.join(projectRoot, 'dist'));
+console.log('Fallback index.html path:', path.resolve(projectRoot, 'dist', 'index.html'));
+
+// Add a check for index.html existence
+const indexPath = path.resolve(projectRoot, 'dist', 'index.html');
+if (fs.existsSync(indexPath)) {
+  console.log(`index.html found at: ${indexPath}`);
+} else {
+  console.error(`index.html NOT found at: ${indexPath}. Frontend build might be missing or path is incorrect.`);
+}
+
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
+  password: process.env.DB_PASSWORD || 'Lamaca1967',
   database: process.env.DB_NAME || 'manutenzioni',
   port: parseInt(process.env.DB_PORT || '3306'),
   waitForConnections: true,
@@ -218,10 +252,11 @@ app.get('/api/users', async (req, res) => {
 app.get('/api/users/:id', async (req, res) => {
   try {
     const connection = await pool.getConnection();
-    const [rows] = await connection.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
+    // Cast esplicito a [IUser[], any] per garantire che 'rows' sia trattato come un array di IUser
+    const [rows] = await connection.query('SELECT * FROM users WHERE id = ?', [req.params.id]) as [IUser[], any];
     connection.release();
-    if ((rows as any[]).length === 0) return res.status(404).json({ error: 'Utente non trovato' });
-    res.json(rows[0]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Utente non trovato' });
+    res.json(rows[0]); 
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Errore nel recupero utente' });
@@ -358,6 +393,33 @@ app.delete('/api/tasks/:id', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server in ascolto su http://localhost:${port}`);
+// Serve static files from the 'dist' directory (frontend build output)
+// Questo middleware gestirà le richieste per file reali come /index.css, /assets/index-xxxx.js
+app.use(express.static(path.join(projectRoot, 'dist')));
+
+// SPA fallback: per qualsiasi altra richiesta GET non gestita dalle API o dai file statici,
+// invia il file index.html. Questo è fondamentale per il routing lato client.
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    const indexHtmlPath = path.resolve(projectRoot, 'dist', 'index.html');
+    if (fs.existsSync(indexHtmlPath)) {
+      res.sendFile(indexHtmlPath);
+    } else {
+      console.error(`index.html NOT found at: ${indexHtmlPath}. Impossibile servire il fallback SPA.`);
+      res.status(500).send('Frontend build mancante o percorso errato.');
+    }
+  } else {
+    // Se non è una richiesta GET, o è un percorso API non corrispondente,
+    // o è un file statico non trovato da express.static,
+    // passa al middleware successivo (che sarà il 404 finale).
+    next();
+  }
 });
+
+// Gestore 404 finale per tutte le richieste rimanenti (es. non-GET a API inesistenti o altri metodi non gestiti)
+app.use((req, res) => {
+  res.status(404).send('Not Found');
+});
+
+// Esporta l'istanza dell'app Express
+export default app;

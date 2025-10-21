@@ -50,7 +50,10 @@ export interface INotification {
 }
 
 // --- API BASE URL ---
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Utilizza un percorso relativo per le API.
+// In sviluppo, Vite proxyerà queste richieste.
+// In produzione, IIS (tramite web.config) le inoltrerà al backend.
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 // --- UTILITY FUNCTIONS ---
 const handleResponse = async (response: Response) => {

@@ -1,12 +1,13 @@
-// tsconfig.server.json (crea questo file nella root del progetto)
 {
   "compilerOptions": {
     "target": "ES2022", // Target moderno per Node.js
-    "module": "CommonJS", // Node.js usa tipicamente CommonJS per i moduli compilati
+    "module": "NodeNext", // <--- Modificato a NodeNext per coerenza con moduleResolution
+    "moduleResolution": "NodeNext", // Risoluzione dei moduli per Node.js
     "outDir": "./dist/backend", // <--- L'output compilato del server andrà qui, in una cartella separata!
     "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true, // Permette importazioni default sintetiche
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,

@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Configurazione Vite valida, senza markup XML errato
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -9,6 +8,10 @@ export default defineConfig({
     sourcemap: false
   },
   server: {
-    port: 5173
+    port: 5173,
+    proxy: {
+      // Inoltra tutte le richieste che iniziano con /api al tuo server backend sulla porta 5000
+      '/api': 'http://localhost:5000' 
+    }
   }
 })

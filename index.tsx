@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import * as api from './api.js'; // Assicurati che api.js rifletta i tipi di data come stringhe
+import * as api from './api.js';
 import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.js';
 
 // Global type for BeforeInstallPromptEvent if not already in your environment (e.g., tsconfig lib)
@@ -20,10 +20,17 @@ declare global {
 
 // --- COMPONENTI UI ---
 
-const NotificationBell = ({ notifications, onNotificationClick, onMarkAllAsRead, sites }) => {
+interface NotificationBellProps {
+  notifications: INotification[];
+  onNotificationClick: (notification: INotification) => void;
+  onMarkAllAsRead: () => void;
+  sites: ISite[];
+}
+
+const NotificationBell = ({ notifications, onNotificationClick, onMarkAllAsRead, sites }: NotificationBellProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const unreadCount = notifications.filter(n => !n.read).length;
-  const siteNameMap = useMemo(() => Object.fromEntries(sites.map(s => [s.id, s.name])), [sites]);
+  const unreadCount = notifications.filter((n: INotification) => !n.read).length;
+  const siteNameMap = useMemo(() => Object.fromEntries(sites.map((s: ISite) => [s.id, s.name])), [sites]);
 
   return (
     <div className="notification-bell-wrapper">
@@ -38,7 +45,7 @@ const NotificationBell = ({ notifications, onNotificationClick, onMarkAllAsRead,
             {unreadCount > 0 && <button onClick={onMarkAllAsRead}>Segna tutte come lette</button>}
           </div>
           <div className="notification-list">
-            {notifications.length > 0 ? notifications.map(notif => (
+            {notifications.length > 0 ? notifications.map((notif: INotification) => (
               <div key={notif.id} className={`notification-item ${notif.read ? 'read' : ''} ${notif.type}`} onClick={() => { onNotificationClick(notif); setIsOpen(false); }}>
                 <p className="notification-message">{notif.message}</p>
                 <p className="notification-details">{siteNameMap[notif.task.siteId]} - Scadenza: {new Date(notif.task.dueDate).toLocaleDateString('it-IT')}</p>
@@ -60,7 +67,17 @@ const Modal = ({ children, onClose }: { children: React.ReactNode; onClose: () =
   </div>
 );
 
-const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, selectedDate, selectedSiteId }) => {
+interface AddTaskFormProps {
+  sites: ISite[];
+  users: IUser[];
+  maintenanceActivities: string[];
+  onAddTask: (taskData: Omit<ITask, 'id'>) => Promise<void>;
+  onClose: () => void;
+  selectedDate: Date;
+  selectedSiteId?: string;
+}
+
+const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, selectedDate, selectedSiteId }: AddTaskFormProps) => {
   const [siteId, setSiteId] = useState(selectedSiteId || sites[0]?.id || '');
   const [description, setDescription] = useState(maintenanceActivities[0] || '');
   const [customDescription, setCustomDescription] = useState('');
@@ -74,7 +91,7 @@ const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, 
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalDescription = customDescription.trim() || description;
 
@@ -86,7 +103,7 @@ const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, 
         alert('Selezionare almeno un assegnatario.');
         return;
     }
-    onAddTask({
+    await onAddTask({
       siteId,
       description: finalDescription,
       dueDate: selectedDate.toISOString().split('T')[0], // Passa come stringa ISO
@@ -106,7 +123,7 @@ const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, 
       <div className="form-group">
         <label htmlFor="site">Sito</label>
         <select id="site" value={siteId} onChange={e => setSiteId(e.target.value)} required>
-          {sites.map(site => <option key={site.id} value={site.id}>{site.name}</option>)}
+          {sites.map((site: ISite) => <option key={site.id} value={site.id}>{site.name}</option>)}
         </select>
       </div>
       <div className="form-group">
@@ -118,7 +135,7 @@ const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, 
             disabled={!!customDescription.trim()} // Disable if custom description is active
             required={!customDescription.trim()}
         >
-            {maintenanceActivities.map(activity => <option key={activity} value={activity}>{activity}</option>)}
+            {maintenanceActivities.map((activity: string) => <option key={activity} value={activity}>{activity}</option>)}
         </select>
         <textarea 
             placeholder="O inserisci una descrizione personalizzata..." 
@@ -131,7 +148,7 @@ const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, 
        <div className="form-group">
         <label>Assegnato a</label>
         <div className="assignee-group">
-          {users.map(user => (
+          {users.map((user: IUser) => (
             <div key={user.id} className="assignee-item">
               <input 
                 type="checkbox" 
@@ -151,7 +168,14 @@ const AddTaskForm = ({ sites, users, maintenanceActivities, onAddTask, onClose, 
   );
 };
 
-const AddODLForm = ({ sites, users, onAddTask, onClose }) => {
+interface AddODLFormProps {
+  sites: ISite[];
+  users: IUser[];
+  onAddTask: (taskData: Omit<ITask, 'id'>) => Promise<void>;
+  onClose: () => void;
+}
+
+const AddODLForm = ({ sites, users, onAddTask, onClose }: AddODLFormProps) => {
     const [siteId, setSiteId] = useState(sites[0]?.id || '');
     const [description, setDescription] = useState('');
     const [assignees, setAssignees] = useState<string[]>([]);
@@ -167,13 +191,13 @@ const AddODLForm = ({ sites, users, onAddTask, onClose }) => {
         );
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!siteId || !description || !odlNumber || assignees.length === 0) {
             alert('Per favore, compila tutti i campi obbligatori.');
             return;
         }
-        onAddTask({
+        await onAddTask({
             siteId,
             description,
             dueDate, // Passa come stringa ISO
@@ -199,7 +223,7 @@ const AddODLForm = ({ sites, users, onAddTask, onClose }) => {
             <div className="form-group">
                 <label htmlFor="site">Sito</label>
                 <select id="site" value={siteId} onChange={e => setSiteId(e.target.value)} required>
-                    {sites.map(site => <option key={site.id} value={site.id}>{site.name}</option>)}
+                    {sites.map((site: ISite) => <option key={site.id} value={site.id}>{site.name}</option>)}
                 </select>
             </div>
             <div className="form-group">
@@ -219,7 +243,7 @@ const AddODLForm = ({ sites, users, onAddTask, onClose }) => {
             <div className="form-group">
                 <label>Assegnato a</label>
                 <div className="assignee-group">
-                    {users.map(user => (
+                    {users.map((user: IUser) => (
                         <div key={user.id} className="assignee-item">
                             <input 
                                 type="checkbox" 
@@ -239,8 +263,13 @@ const AddODLForm = ({ sites, users, onAddTask, onClose }) => {
     );
 };
 
+interface SiteFormProps {
+  onSaveSite: (site: ISite) => Promise<void>;
+  onClose: () => void;
+  siteToEdit: ISite | null;
+}
 
-const SiteForm = ({ onSaveSite, onClose, siteToEdit }) => {
+const SiteForm = ({ onSaveSite, onClose, siteToEdit }: SiteFormProps) => {
     const isEditing = !!siteToEdit;
     const [name, setName] = useState(siteToEdit?.name || '');
     const [address, setAddress] = useState(siteToEdit?.address || '');
@@ -261,10 +290,10 @@ const SiteForm = ({ onSaveSite, onClose, siteToEdit }) => {
         setOtherContacts(otherContacts.map(c => c.id === id ? { ...c, [field]: value } : c));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSaveSite({
-            id: isEditing ? siteToEdit.id : `site-${Date.now()}`,
+        await onSaveSite({
+            id: isEditing ? siteToEdit!.id : `site-${Date.now()}`,
             name,
             address,
             manager,
@@ -327,7 +356,7 @@ const SiteForm = ({ onSaveSite, onClose, siteToEdit }) => {
             <div className="form-group">
                 <label>Altri Contatti</label>
                 <div className="other-contacts-list">
-                    {otherContacts.map((contact) => (
+                    {otherContacts.map((contact: IOtherContact) => (
                         <div key={contact.id} className="contact-row">
                             <input type="text" placeholder="Nome" value={contact.name} onChange={(e) => handleContactChange(contact.id, 'name', e.target.value)} />
                             <input type="text" placeholder="Telefono" value={contact.phone} onChange={(e) => handleContactChange(contact.id, 'phone', e.target.value)} />
@@ -348,16 +377,21 @@ const SiteForm = ({ onSaveSite, onClose, siteToEdit }) => {
     );
 };
 
+interface UserFormProps {
+  onSaveUser: (user: IUser) => Promise<void>;
+  onClose: () => void;
+  userToEdit: IUser | null;
+}
 
-const UserForm = ({ onSaveUser, onClose, userToEdit }) => {
+const UserForm = ({ onSaveUser, onClose, userToEdit }: UserFormProps) => {
   const isEditing = !!userToEdit;
   const [name, setName] = useState(userToEdit?.name || '');
   const [role, setRole] = useState(userToEdit?.role || '');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSaveUser({ 
-      id: isEditing ? userToEdit.id : `user-${Date.now()}`, 
+    await onSaveUser({ 
+      id: isEditing ? userToEdit!.id : `user-${Date.now()}`, 
       name, 
       role 
     });
@@ -385,7 +419,16 @@ const UserForm = ({ onSaveUser, onClose, userToEdit }) => {
   );
 };
 
-const TaskDetailsForm = ({ task, sites, users, onUpdateTask, onDeleteTask, onClose }) => {
+interface TaskDetailsFormProps {
+  task: ITask;
+  sites: ISite[];
+  users: IUser[];
+  onUpdateTask: (taskId: string, updates: Partial<ITask>) => Promise<void>;
+  onDeleteTask: (taskId: string) => Promise<void>;
+  onClose: () => void;
+}
+
+const TaskDetailsForm = ({ task, sites, users, onUpdateTask, onDeleteTask, onClose }: TaskDetailsFormProps) => {
     const [isEditing, setIsEditing] = useState(false);
     
     // Converti le date in stringhe ISO 8601 per gli input type="date"
@@ -396,16 +439,16 @@ const TaskDetailsForm = ({ task, sites, users, onUpdateTask, onDeleteTask, onClo
     const [editOdlNumber, setEditOdlNumber] = useState(task.odlNumber || '');
     const [editStartDate, setEditStartDate] = useState(task.startDate || ''); // Già stringa ISO
     
-    const site = sites.find(s => s.id === task.siteId);
+    const site = sites.find((s: ISite) => s.id === task.siteId);
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (window.confirm('Sei sicuro di voler eliminare questa attività?')) {
-            onDeleteTask(task.id);
+            await onDeleteTask(task.id);
             onClose();
         }
     };
     
-    const handleSaveChanges = () => {
+    const handleSaveChanges = async () => {
         const updates: Partial<ITask> = {
             description: editDescription,
             dueDate: editDueDate, // Mantenuta come stringa ISO
@@ -418,7 +461,7 @@ const TaskDetailsForm = ({ task, sites, users, onUpdateTask, onDeleteTask, onClo
             updates.startDate = editStartDate || undefined; // Mantenuta come stringa ISO
         }
 
-        onUpdateTask(task.id, updates);
+        await onUpdateTask(task.id, updates);
         setIsEditing(false);
     };
     
@@ -481,7 +524,7 @@ const TaskDetailsForm = ({ task, sites, users, onUpdateTask, onDeleteTask, onClo
                 <div className="form-group">
                     <label>Assegnato a</label>
                     <div className="assignee-group">
-                        {users.map(user => (
+                        {users.map((user: IUser) => (
                             <div key={user.id} className="assignee-item">
                                 <input 
                                     type="checkbox" 
@@ -542,8 +585,16 @@ const TaskDetailsForm = ({ task, sites, users, onUpdateTask, onDeleteTask, onClo
     );
 };
 
-const TaskListModal = ({ title, tasks, sites, onClose, onTaskClick }) => {
-    const siteNameMap = useMemo(() => Object.fromEntries(sites.map(s => [s.id, s.name])), [sites]);
+interface TaskListModalProps {
+  title: string;
+  tasks: ITask[];
+  sites: ISite[];
+  onClose: () => void;
+  onTaskClick: (task: ITask) => void;
+}
+
+const TaskListModal = ({ title, tasks, sites, onClose, onTaskClick }: TaskListModalProps) => {
+    const siteNameMap = useMemo(() => Object.fromEntries(sites.map((s: ISite) => [s.id, s.name])), [sites]);
 
     return (
         <div>
@@ -553,7 +604,7 @@ const TaskListModal = ({ title, tasks, sites, onClose, onTaskClick }) => {
             </div>
             <div className="task-list-modal-content">
                 {tasks.length > 0 ? (
-                    tasks.map(task => (
+                    tasks.map((task: ITask) => (
                         <div key={task.id} className="task-list-modal-item" onClick={() => onTaskClick(task)}>
                             <span className={`status-dot ${task.status}`}></span>
                             <div className="task-list-modal-details">
@@ -574,18 +625,25 @@ const TaskListModal = ({ title, tasks, sites, onClose, onTaskClick }) => {
 
 // --- VISTE PRINCIPALI ---
 
-const Dashboard = ({ tasks, sites, onCardClick, onTaskClick }) => {
+interface DashboardProps {
+  tasks: ITask[];
+  sites: ISite[];
+  onCardClick: (cardType: string) => void;
+  onTaskClick: (task: ITask) => void;
+}
+
+const Dashboard = ({ tasks, sites, onCardClick, onTaskClick }: DashboardProps) => {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const pendingTasks = tasks.filter(t => t.status === 'pending').length;
-  const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
-  const completedThisMonth = tasks.filter(t => t.status === 'completed' && new Date(t.dueDate).getMonth() === now.getMonth()).length;
-  const overdueTasks = tasks.filter(t => t.status !== 'completed' && new Date(t.dueDate) < todayStart).length;
+  const pendingTasks = tasks.filter((t: ITask) => t.status === 'pending').length;
+  const inProgressTasks = tasks.filter((t: ITask) => t.status === 'in_progress').length;
+  const completedThisMonth = tasks.filter((t: ITask) => t.status === 'completed' && new Date(t.dueDate).getMonth() === now.getMonth()).length;
+  const overdueTasks = tasks.filter((t: ITask) => t.status !== 'completed' && new Date(t.dueDate) < todayStart).length;
 
   const upcomingTasks = tasks
-    .filter(t => t.status !== 'completed' && new Date(t.dueDate) >= todayStart)
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .filter((t: ITask) => t.status !== 'completed' && new Date(t.dueDate) >= todayStart)
+    .sort((a: ITask, b: ITask) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
     .slice(0, 5);
 
   return (
@@ -601,8 +659,8 @@ const Dashboard = ({ tasks, sites, onCardClick, onTaskClick }) => {
         <h2>Prossime Scadenze</h2>
         {upcomingTasks.length > 0 ? (
           <ul>
-            {upcomingTasks.map(task => {
-              const site = sites.find(s => s.id === task.siteId);
+            {upcomingTasks.map((task: ITask) => {
+              const site = sites.find((s: ISite) => s.id === task.siteId);
               return (
                 <li key={task.id} className="clickable" onClick={() => onTaskClick(task)}>
                   <span className={`status-dot ${task.status}`}></span>
@@ -621,14 +679,20 @@ const Dashboard = ({ tasks, sites, onCardClick, onTaskClick }) => {
   );
 };
 
-const SiteList = ({ sites, onAddSiteClick, onSiteClick }) => (
+interface SiteListProps {
+  sites: ISite[];
+  onAddSiteClick: () => void;
+  onSiteClick: (siteId: string) => void;
+}
+
+const SiteList = ({ sites, onAddSiteClick, onSiteClick }: SiteListProps) => (
   <div>
     <div className="header">
         <h1>Siti</h1>
         <button className="btn btn-primary" onClick={onAddSiteClick}>Aggiungi Sito</button>
     </div>
     <div className="card-grid">
-      {sites.map(site => (
+      {sites.map((site: ISite) => (
         <div key={site.id} className="card site-card" onClick={() => onSiteClick(site.id)}>
           <h2>{site.name}</h2>
           <p>{site.address}</p>
@@ -638,14 +702,20 @@ const SiteList = ({ sites, onAddSiteClick, onSiteClick }) => (
   </div>
 );
 
-const Resources = ({ users, onAddUserClick, onUserClick }) => (
+interface ResourcesProps {
+  users: IUser[];
+  onAddUserClick: () => void;
+  onUserClick: (user: IUser) => void;
+}
+
+const Resources = ({ users, onAddUserClick, onUserClick }: ResourcesProps) => (
   <div>
     <div className="header">
         <h1>Risorse</h1>
         <button className="btn btn-primary" onClick={onAddUserClick}>Aggiungi Risorsa</button>
     </div>
     <div className="card-grid">
-      {users.map(user => (
+      {users.map((user: IUser) => (
         <div key={user.id} className="card user-card" onClick={() => onUserClick(user)}>
           <h2>{user.name}</h2>
           <p>{user.role}</p>
@@ -655,8 +725,15 @@ const Resources = ({ users, onAddUserClick, onUserClick }) => (
   </div>
 );
 
-const ODLView = ({ tasks, sites, onAddODLClick, onTaskClick }) => {
-    const odls = tasks.filter(task => task.type === 'odl').sort((a, b) => {
+interface ODLViewProps {
+  tasks: ITask[];
+  sites: ISite[];
+  onAddODLClick: () => void;
+  onTaskClick: (task: ITask) => void;
+}
+
+const ODLView = ({ tasks, sites, onAddODLClick, onTaskClick }: ODLViewProps) => {
+    const odls = tasks.filter((task: ITask) => task.type === 'odl').sort((a: ITask, b: ITask) => {
         // Usa le stringhe direttamente per il confronto o converti in Date
         const dateB = new Date(b.startDate || b.dueDate);
         const dateA = new Date(a.startDate || a.dueDate);
@@ -670,8 +747,8 @@ const ODLView = ({ tasks, sites, onAddODLClick, onTaskClick }) => {
                 <button className="btn btn-primary" onClick={onAddODLClick}>Aggiungi ODL</button>
             </div>
             <div className="odl-list">
-                {odls.length > 0 ? odls.map(odl => {
-                    const site = sites.find(s => s.id === odl.siteId);
+                {odls.length > 0 ? odls.map((odl: ITask) => {
+                    const site = sites.find((s: ISite) => s.id === odl.siteId);
                     return (
                         <div key={odl.id} className="history-item" onClick={() => onTaskClick(odl)}>
                              <span className={`status-dot ${odl.status}`}></span>
@@ -690,20 +767,27 @@ const ODLView = ({ tasks, sites, onAddODLClick, onTaskClick }) => {
     );
 };
 
-const SiteDetail = ({ site, tasks, onTaskClick, onEditSiteClick }) => {
+interface SiteDetailProps {
+  site: ISite;
+  tasks: ITask[];
+  onTaskClick: (task: ITask) => void;
+  onEditSiteClick: (site: ISite) => void;
+}
+
+const SiteDetail = ({ site, tasks, onTaskClick, onEditSiteClick }: SiteDetailProps) => {
     const [statusFilter, setStatusFilter] = useState<'all' | TaskStatus>('all');
     const [typeFilter, setTypeFilter] = useState<'all' | 'maintenance' | 'odl'>('all');
 
     const filteredTasks = useMemo(() => {
         return tasks
-            .filter(task => task.siteId === site.id)
-            .filter(task => typeFilter === 'all' || task.type === typeFilter)
-            .filter(task => statusFilter === 'all' || task.status === statusFilter);
+            .filter((task: ITask) => task.siteId === site.id)
+            .filter((task: ITask) => typeFilter === 'all' || task.type === typeFilter)
+            .filter((task: ITask) => statusFilter === 'all' || task.status === statusFilter);
     }, [tasks, site.id, typeFilter, statusFilter]);
     
-    const pending = filteredTasks.filter(t => t.status === 'pending');
-    const inProgress = filteredTasks.filter(t => t.status === 'in_progress');
-    const completed = filteredTasks.filter(t => t.status === 'completed');
+    const pending = filteredTasks.filter((t: ITask) => t.status === 'pending');
+    const inProgress = filteredTasks.filter((t: ITask) => t.status === 'in_progress');
+    const completed = filteredTasks.filter((t: ITask) => t.status === 'completed');
 
     return (
         <div>
@@ -730,7 +814,7 @@ const SiteDetail = ({ site, tasks, onTaskClick, onEditSiteClick }) => {
                     <div className="site-info-section">
                         <h3>Altri Contatti</h3>
                         <ul>
-                            {site.otherContacts.map(contact => (
+                            {site.otherContacts.map((contact: IOtherContact) => (
                                 <li key={contact.id}>
                                     <strong>{contact.name}:</strong> 
                                     <span>{contact.phone}</span>
@@ -762,7 +846,7 @@ const SiteDetail = ({ site, tasks, onTaskClick, onEditSiteClick }) => {
             <div className="odl-summary">
                 <div className="odl-column">
                     <h3>Da Fare ({pending.length})</h3>
-                    {pending.map(task => (
+                    {pending.map((task: ITask) => (
                         <div key={task.id} className={`task-item ${task.status}`} onClick={() => onTaskClick(task)}>
                             <span className="task-item-desc">{task.type === 'odl' && `[ODL] `}{task.description}</span>
                             <span className="task-item-assignee">{task.assignees.join(', ')}</span>
@@ -772,7 +856,7 @@ const SiteDetail = ({ site, tasks, onTaskClick, onEditSiteClick }) => {
                 </div>
                 <div className="odl-column">
                     <h3>In Corso ({inProgress.length})</h3>
-                    {inProgress.map(task => (
+                    {inProgress.map((task: ITask) => (
                          <div key={task.id} className={`task-item ${task.status}`} onClick={() => onTaskClick(task)}>
                             <span className="task-item-desc">{task.type === 'odl' && `[ODL] `}{task.description}</span>
                             <span className="task-item-assignee">{task.assignees.join(', ')}</span>
@@ -782,7 +866,7 @@ const SiteDetail = ({ site, tasks, onTaskClick, onEditSiteClick }) => {
                 </div>
                 <div className="odl-column">
                     <h3>Completate ({completed.length})</h3>
-                    {completed.map(task => (
+                    {completed.map((task: ITask) => (
                         <div key={task.id} className={`task-item ${task.status}`} onClick={() => onTaskClick(task)}>
                             <span className="task-item-desc">{task.type === 'odl' && `[ODL] `}{task.description}</span>
                             <span className="task-item-assignee">{task.assignees.join(', ')}</span>
@@ -794,7 +878,7 @@ const SiteDetail = ({ site, tasks, onTaskClick, onEditSiteClick }) => {
 
             <div className="history-list">
                 <h2>Storico Attività</h2>
-                {[...filteredTasks].sort((a,b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()).map(task => (
+                {[...filteredTasks].sort((a: ITask, b: ITask) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()).map((task: ITask) => (
                     <div key={task.id} className="history-item" onClick={() => onTaskClick(task)}>
                         <span className={`status-dot ${task.status}`}></span>
                         <span className="history-date">{new Date(task.dueDate).toLocaleDateString('it-IT')}</span>
@@ -807,12 +891,22 @@ const SiteDetail = ({ site, tasks, onTaskClick, onEditSiteClick }) => {
     );
 };
 
-const Schedule = ({ tasks, sites, users, resourceFilter, onResourceFilterChange, onAddTaskClick, onTaskClick }) => {
+interface ScheduleProps {
+  tasks: ITask[];
+  sites: ISite[];
+  users: IUser[];
+  resourceFilter: string;
+  onResourceFilterChange: (filter: string) => void;
+  onAddTaskClick: (date: Date) => void;
+  onTaskClick: (task: ITask) => void;
+}
+
+const Schedule = ({ tasks, sites, users, resourceFilter, onResourceFilterChange, onAddTaskClick, onTaskClick }: ScheduleProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const daysInMonth = useMemo(() => {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const days = [];
+      const days: Date[] = [];
       while (date.getMonth() === currentDate.getMonth()) {
           days.push(new Date(date));
           date.setDate(date.getDate() + 1);
@@ -826,15 +920,15 @@ const Schedule = ({ tasks, sites, users, resourceFilter, onResourceFilterChange,
 
 
   const tasksByDate = useMemo(() => {
-    return tasks.reduce((acc, task) => {
+    return tasks.reduce((acc: Record<string, ITask[]>, task: ITask) => {
       const dateKey = new Date(task.dueDate).toDateString(); // Converti stringa in Date per la chiave
       if (!acc[dateKey]) acc[dateKey] = [];
       acc[dateKey].push(task);
       return acc;
-    }, {});
+    }, {} as Record<string, ITask[]>);
   }, [tasks]);
 
-  const changeMonth = (offset) => {
+  const changeMonth = (offset: number) => {
     setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
   };
   
@@ -857,7 +951,7 @@ const Schedule = ({ tasks, sites, users, resourceFilter, onResourceFilterChange,
                 onChange={(e) => onResourceFilterChange(e.target.value)}
             >
                 <option value="">Tutte le Risorse</option>
-                {users.map(user => (
+                {users.map((user: IUser) => (
                     <option key={user.id} value={user.name}>{user.name}</option>
                 ))}
             </select>
@@ -866,7 +960,7 @@ const Schedule = ({ tasks, sites, users, resourceFilter, onResourceFilterChange,
       <div className="calendar-grid">
         {weekDays.map(day => <div key={day} className="calendar-header">{day}</div>)}
         {Array.from({ length: startingDay }).map((_, i) => <div key={`empty-${i}`} className="calendar-day other-month"></div>)}
-        {daysInMonth.map(day => {
+        {daysInMonth.map((day: Date) => {
           const dateKey = day.toDateString();
           const dayTasks = tasksByDate[dateKey] || [];
           const isToday = day.toDateString() === new Date().toDateString();
@@ -875,8 +969,8 @@ const Schedule = ({ tasks, sites, users, resourceFilter, onResourceFilterChange,
               <div className="day-number">{day.getDate()}</div>
               <button className="add-task-btn" onClick={() => onAddTaskClick(day)}>+</button>
               <div className="tasks-list">
-                {dayTasks.map(task => {
-                  const site = sites.find(s => s.id === task.siteId);
+                {dayTasks.map((task: ITask) => {
+                  const site = sites.find((s: ISite) => s.id === task.siteId);
                   return(
                   <div key={task.id} className={`task-item ${task.status}`} onClick={() => onTaskClick(task)} title={`${task.description} - ${site?.name} (${task.assignees.join(', ')})`}>
                       <span className="task-item-desc">{task.type === 'odl' && `[ODL] `}{task.description}</span>
@@ -892,12 +986,22 @@ const Schedule = ({ tasks, sites, users, resourceFilter, onResourceFilterChange,
   );
 };
 
-const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChange, onTaskClick, onAddTaskClick }) => {
+interface MatrixViewProps {
+  tasks: ITask[];
+  sites: ISite[];
+  users: IUser[];
+  resourceFilter: string;
+  onResourceFilterChange: (filter: string) => void;
+  onTaskClick: (task: ITask) => void;
+  onAddTaskClick: (date: Date, siteId: string) => void;
+}
+
+const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChange, onTaskClick, onAddTaskClick }: MatrixViewProps) => {
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const daysInMonth = useMemo(() => {
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const days = [];
+        const days: Date[] = [];
         while (date.getMonth() === currentDate.getMonth()) {
             days.push(new Date(date));
             date.setDate(date.getDate() + 1);
@@ -906,11 +1010,11 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
     }, [currentDate]);
 
     const tasksBySiteAndDate = useMemo(() => {
-        const groupedTasks = {};
-        sites.forEach(site => {
+        const groupedTasks: Record<string, Record<number, ITask[]>> = {};
+        sites.forEach((site: ISite) => {
             groupedTasks[site.id] = {};
         });
-        tasks.forEach(task => {
+        tasks.forEach((task: ITask) => {
             const taskDueDate = new Date(task.dueDate); // Converti stringa in Date per il confronto
             if (taskDueDate.getMonth() === currentDate.getMonth() && taskDueDate.getFullYear() === currentDate.getFullYear()) {
                 const date = taskDueDate.getDate();
@@ -924,7 +1028,7 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
         return groupedTasks;
     }, [tasks, sites, currentDate]);
 
-    const changeMonth = (offset) => {
+    const changeMonth = (offset: number) => {
         setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
     };
 
@@ -945,7 +1049,7 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
                         onChange={(e) => onResourceFilterChange(e.target.value)}
                     >
                         <option value="">Tutte le Risorse</option>
-                        {users.map(user => (
+                        {users.map((user: IUser) => (
                             <option key={user.id} value={user.name}>{user.name}</option>
                         ))}
                     </select>
@@ -954,22 +1058,22 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
             <div className="matrix-container">
                 <div className="matrix-grid" style={{ gridTemplateColumns: `minmax(200px, 1.5fr) repeat(${daysInMonth.length}, minmax(150px, 1fr))` }}>
                     <div className="matrix-cell matrix-header sticky-top sticky-left">Sito</div>
-                    {daysInMonth.map(day => (
+                    {daysInMonth.map((day: Date) => (
                         <div key={`header-${day.getDate()}`} className={`matrix-cell matrix-header sticky-top ${day.getDay() === 0 || day.getDay() === 6 ? 'weekend' : ''}`}>
                             <span className="matrix-day-name">{day.toLocaleDateString('it-IT', { weekday: 'short' })}</span>
                             <span className="matrix-day-number">{day.getDate()}</span>
                         </div>
                     ))}
-                    {sites.map(site => (
+                    {sites.map((site: ISite) => (
                         <React.Fragment key={site.id}>
                             <div className="matrix-cell matrix-site-header sticky-left">{site.name}</div>
-                            {daysInMonth.map(day => {
+                            {daysInMonth.map((day: Date) => {
                                 const dayNumber = day.getDate();
-                                const cellTasks = tasksBySiteAndDate[site.id]?.[dayNumber] || [];
+                                const cellTasks = tasksBySiteAndDate[site.id]?.[dayNumber] || []; // <--- CORREZIONE QUI
                                 return (
                                     <div key={`${site.id}-${dayNumber}`} className={`matrix-cell ${day.getDay() === 0 || day.getDay() === 6 ? 'weekend' : ''}`}>
                                         <button className="add-task-btn" onClick={() => onAddTaskClick(day, site.id)}>+</button>
-                                        {cellTasks.map(task => (
+                                        {cellTasks.map((task: ITask) => (
                                             <div
                                                 key={task.id}
                                                 className={`task-item ${task.status}`}
@@ -991,12 +1095,18 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
     );
 };
 
-const GanttView = ({ tasks, sites, onTaskClick }) => {
+interface GanttViewProps {
+  tasks: ITask[];
+  sites: ISite[];
+  onTaskClick: (task: ITask) => void;
+}
+
+const GanttView = ({ tasks, sites, onTaskClick }: GanttViewProps) => {
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const daysInMonth = useMemo(() => {
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const days = [];
+        const days: Date[] = [];
         while (date.getMonth() === currentDate.getMonth()) {
             days.push(new Date(date));
             date.setDate(date.getDate() + 1);
@@ -1004,7 +1114,7 @@ const GanttView = ({ tasks, sites, onTaskClick }) => {
         return days;
     }, [currentDate]);
     
-    const changeMonth = (offset) => {
+    const changeMonth = (offset: number) => {
         setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
     };
 
@@ -1012,7 +1122,7 @@ const GanttView = ({ tasks, sites, onTaskClick }) => {
     const monthEnd = daysInMonth[daysInMonth.length - 1];
 
     const tasksForMonth = useMemo(() => {
-        return tasks.filter(task => {
+        return tasks.filter((task: ITask) => {
             const { start, end } = getTaskInterval(task);
             return start <= monthEnd && end >= monthStart;
         });
@@ -1032,7 +1142,7 @@ const GanttView = ({ tasks, sites, onTaskClick }) => {
                 <div className="gantt-grid" style={{ gridTemplateColumns: `minmax(200px, 1.5fr) repeat(${daysInMonth.length}, 1fr)` }}>
                     {/* Headers */}
                     <div className="gantt-cell gantt-header sticky-top sticky-left">Sito</div>
-                    {daysInMonth.map(day => (
+                    {daysInMonth.map((day: Date) => (
                         <div key={`header-${day.getDate()}`} className={`gantt-cell gantt-header sticky-top ${day.getDay() === 0 || day.getDay() === 6 ? 'weekend' : ''}`}>
                              <span className="gantt-day-name">{day.toLocaleDateString('it-IT', { weekday: 'short' })}</span>
                              <span className="gantt-day-number">{day.getDate()}</span>
@@ -1040,18 +1150,18 @@ const GanttView = ({ tasks, sites, onTaskClick }) => {
                     ))}
                     
                     {/* Site Rows & Background Grid */}
-                    {sites.map((site, siteIndex) => (
+                    {sites.map((site: ISite, siteIndex: number) => (
                         <React.Fragment key={site.id}>
                             <div className="gantt-cell gantt-site-header sticky-left" style={{gridRow: siteIndex + 2}}>{site.name}</div>
-                             {daysInMonth.map((day, dayIndex) => (
+                             {daysInMonth.map((day: Date, dayIndex: number) => (
                                 <div key={`${site.id}-${day.getDate()}`} className={`gantt-cell gantt-row-cell ${day.getDay() === 0 || day.getDay() === 6 ? 'weekend' : ''}`} style={{gridRow: siteIndex + 2, gridColumn: dayIndex + 2}}></div>
                             ))}
                         </React.Fragment>
                     ))}
 
                     {/* Task Bars */}
-                    {tasksForMonth.map(task => {
-                        const siteIndex = sites.findIndex(s => s.id === task.siteId);
+                    {tasksForMonth.map((task: ITask) => {
+                        const siteIndex = sites.findIndex((s: ISite) => s.id === task.siteId);
                         if (siteIndex === -1) return null;
 
                         const { start, end } = getTaskInterval(task);
@@ -1108,7 +1218,7 @@ const checkAssignmentConflicts = (
     for (const assignee of newAssignees) {
         // Filtra solo i task non completati e non il task che stiamo modificando/aggiungendo
         const assignedTasks = allTasks.filter(
-            t => t.id !== currentTaskId && t.assignees.includes(assignee) && t.status !== 'completed'
+            (t: ITask) => t.id !== currentTaskId && t.assignees.includes(assignee) && t.status !== 'completed'
         );
 
         for (const task of assignedTasks) {
@@ -1128,7 +1238,7 @@ const checkAssignmentConflicts = (
 // --- COMPONENTE PRINCIPALE APP ---
 
 const App = () => {
-  const [view, setView] = useState('dashboard');
+  const [view, setView] = useState<string>('dashboard');
   const [sites, setSites] = useState<ISite[]>([]);
   const [users, setUsers] = useState<IUser[]>([]);
   const [tasks, setTasks] = useState<ITask[]>([]);
@@ -1153,7 +1263,7 @@ const App = () => {
     }
   });
 
-  const selectedSite = useMemo(() => sites.find(s => s.id === selectedSiteId), [sites, selectedSiteId]);
+  const selectedSite = useMemo(() => sites.find((s: ISite) => s.id === selectedSiteId), [sites, selectedSiteId]);
 
     useEffect(() => {
         try {
@@ -1196,7 +1306,7 @@ const App = () => {
 
         const generated: INotification[] = [];
 
-        tasks.forEach(task => {
+        tasks.forEach((task: ITask) => {
             if (task.status !== 'completed') {
                 const dueDate = new Date(task.dueDate); // Converti la stringa in Date per il confronto
                 const notificationId = `notif-${task.id}`;
@@ -1227,7 +1337,7 @@ const App = () => {
             }
         });
         
-        const finalNotifications = generated.sort((a, b) => {
+        const finalNotifications = generated.sort((a: INotification, b: INotification) => {
             if (a.read !== b.read) {
                 return a.read ? 1 : -1; // Unread notifications first
             }
@@ -1275,7 +1385,7 @@ const App = () => {
         if (!resourceFilter) {
             return tasks;
         }
-        return tasks.filter(task => task.assignees.includes(resourceFilter));
+        return tasks.filter((task: ITask) => task.assignees.includes(resourceFilter));
     }, [tasks, resourceFilter]);
 
 
@@ -1302,9 +1412,9 @@ const App = () => {
   
   const handleSaveSite = async (site: ISite) => {
     const savedSite = await api.saveSite(site);
-    const siteExists = sites.some(s => s.id === savedSite.id);
+    const siteExists = sites.some((s: ISite) => s.id === savedSite.id);
     if (siteExists) {
-        setSites(sites.map(s => s.id === savedSite.id ? savedSite : s));
+        setSites(sites.map((s: ISite) => s.id === savedSite.id ? savedSite : s));
     } else {
         setSites(prevSites => [...prevSites, savedSite]);
     }
@@ -1312,16 +1422,16 @@ const App = () => {
 
   const handleSaveUser = async (user: IUser) => {
     const savedUser = await api.saveUser(user);
-    const userExists = users.some(u => u.id === savedUser.id);
+    const userExists = users.some((u: IUser) => u.id === savedUser.id);
     if (userExists) {
-      setUsers(users.map(u => u.id === savedUser.id ? savedUser : u));
+      setUsers(users.map((u: IUser) => u.id === savedUser.id ? savedUser : u));
     } else {
       setUsers(prevUsers => [...prevUsers, savedUser]);
     }
   };
   
   const handleUpdateTask = async (taskId: string, updates: Partial<ITask>) => {
-    const originalTask = tasks.find(t => t.id === taskId);
+    const originalTask = tasks.find((t: ITask) => t.id === taskId);
     if (!originalTask) return;
 
     // Crea un oggetto task aggiornato per il controllo dei conflitti
@@ -1342,12 +1452,12 @@ const App = () => {
     }
     
     const updatedTask = await api.updateTask(taskId, updates);
-    setTasks(tasks.map(t => t.id === taskId ? updatedTask : t));
+    setTasks(tasks.map((t: ITask) => t.id === taskId ? updatedTask : t));
   };
 
   const handleDeleteTask = async (taskId: string) => {
       await api.deleteTask(taskId);
-      setTasks(tasks.filter(t => t.id !== taskId));
+      setTasks(tasks.filter((t: ITask) => t.id !== taskId));
   };
 
   const handleAddTaskClick = (date: Date, siteId?: string) => {
@@ -1393,7 +1503,7 @@ const App = () => {
   };
   
   const handleMarkAllAsRead = () => {
-      const allCurrentIds = notifications.map(n => n.id);
+      const allCurrentIds = notifications.map((n: INotification) => n.id);
       setReadNotificationIds(prev => new Set([...Array.from(prev), ...allCurrentIds]));
   };
   
@@ -1462,7 +1572,7 @@ const App = () => {
             />;
 
         case 'taskDetails': {
-            const task = tasks.find(t => t.id === modalConfig.data.taskId);
+            const task = tasks.find((t: ITask) => t.id === modalConfig.data.taskId);
             if (!task) return null;
             return <TaskDetailsForm 
                 task={task} 
@@ -1485,26 +1595,26 @@ const App = () => {
             switch (cardType) {
                 case 'overdue':
                     title = 'Attività Scadute';
-                    filtered = tasks.filter(t => t.status !== 'completed' && new Date(t.dueDate) < todayStart);
+                    filtered = tasks.filter((t: ITask) => t.status !== 'completed' && new Date(t.dueDate) < todayStart);
                     break;
                 case 'pending':
                     title = 'Attività da Fare';
-                    filtered = tasks.filter(t => t.status === 'pending');
+                    filtered = tasks.filter((t: ITask) => t.status === 'pending');
                     break;
                 case 'in_progress':
                     title = 'Attività in Corso';
-                    filtered = tasks.filter(t => t.status === 'in_progress');
+                    filtered = tasks.filter((t: ITask) => t.status === 'in_progress');
                     break;
                 case 'completed':
                     title = 'Completate nel Mese';
-                    filtered = tasks.filter(t => t.status === 'completed' && new Date(t.dueDate).getMonth() === now.getMonth());
+                    filtered = tasks.filter((t: ITask) => t.status === 'completed' && new Date(t.dueDate).getMonth() === now.getMonth());
                     break;
                 default: return null;
             }
 
             return <TaskListModal 
                 title={title} 
-                tasks={filtered.sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())} 
+                tasks={filtered.sort((a: ITask, b: ITask) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())} 
                 sites={sites} 
                 onClose={closeModal} 
                 onTaskClick={handleTaskClick} 
