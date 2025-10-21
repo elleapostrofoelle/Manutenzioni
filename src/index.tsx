@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import * as api from './api.ts';
-import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.ts';
+import * as api from '@/api.ts'; // Modificato per usare l'alias
+import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from '@/api.ts'; // Modificato per usare l'alias
 
 // Global type for BeforeInstallPromptEvent if not already in your environment (e.g., tsconfig lib)
 declare global {
