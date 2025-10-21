@@ -129,6 +129,7 @@ app.get('/api/sites/:id', async (req, res) => {
 app.post('/api/sites', async (req, res) => {
   try {
     const site: ISite = req.body;
+    console.log('Received site for insert:', req.body); // Log per debug
     // Ensure JSONB fields are not null for Supabase
     const siteToInsert = {
       ...site,
@@ -136,6 +137,7 @@ app.post('/api/sites', async (req, res) => {
       contactPerson: site.contactPerson || {},
       otherContacts: site.otherContacts || [],
     };
+    console.log('Site data prepared for Supabase insert:', siteToInsert); // Log per debug
     const { data, error } = await supabase.from('sites').insert([siteToInsert]).select().single();
     if (error) {
       console.error('Supabase insert error for site:', error); // Log dettagliato dell'errore Supabase
@@ -151,6 +153,7 @@ app.post('/api/sites', async (req, res) => {
 app.put('/api/sites/:id', async (req, res) => {
   try {
     const site: Partial<ISite> = req.body;
+    console.log('Received site for update:', req.body); // Log per debug
     // Ensure JSONB fields are not null for Supabase
     const siteToUpdate = {
       ...site,
@@ -158,6 +161,7 @@ app.put('/api/sites/:id', async (req, res) => {
       contactPerson: site.contactPerson || {},
       otherContacts: site.otherContacts || [],
     };
+    console.log('Site data prepared for Supabase update:', siteToUpdate); // Log per debug
     const { data, error } = await supabase.from('sites').update(siteToUpdate).eq('id', req.params.id).select().single();
     if (error) {
       console.error('Supabase update error for site:', error); // Log dettagliato dell'errore Supabase
