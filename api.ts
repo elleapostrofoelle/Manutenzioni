@@ -141,9 +141,13 @@ export const deleteTask = async (taskId: string): Promise<void> => {
 };
 
 export const saveSite = async (siteData: ISite): Promise<ISite> => {
-  // Assicurati che otherContacts sia sempre un array, anche se vuoto
+  // Assicurati che i campi JSONB siano sempre oggetti (anche vuoti) e i campi text siano stringhe (anche vuote)
+  // per evitare violazioni di vincoli NOT NULL se il database li richiede.
   const siteDataToSend = {
     ...siteData,
+    manager: siteData.manager && siteData.manager.name ? siteData.manager : {},
+    contactPerson: siteData.contactPerson && siteData.contactPerson.name ? siteData.contactPerson : {},
+    landline: siteData.landline || '',
     otherContacts: siteData.otherContacts || [],
   };
 
