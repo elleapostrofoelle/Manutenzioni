@@ -58,7 +58,8 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 // --- UTILITY FUNCTIONS ---
 const handleResponse = async (response: Response) => {
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    const errorBody = await response.text(); // Leggi il corpo della risposta per più dettagli
+    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorBody}`);
   }
   return response.json();
 };
@@ -134,11 +135,18 @@ export const deleteTask = async (taskId: string): Promise<void> => {
     method: 'DELETE',
   });
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    const errorBody = await response.text();
+    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorBody}`);
   }
 };
 
 export const saveSite = async (siteData: ISite): Promise<ISite> => {
+  // Assicurati che otherContacts sia sempre un array, anche se vuoto
+  const siteDataToSend = {
+    ...siteData,
+    otherContacts: siteData.otherContacts || [],
+  };
+
   // Nota: Questo modo di verificare l'esistenza del sito (fetchando tutti i siti)
   // non è ottimale per le API reali. In un backend vero, useresti un endpoint GET specifico
   // per ID per verificare, o l'API stessa gestirebbe l'UPSERT basato sull'ID fornito.
@@ -152,7 +160,7 @@ export const saveSite = async (siteData: ISite): Promise<ISite> => {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(siteData),
+    body: JSON.stringify(siteDataToSend),
   });
   return handleResponse(response);
 };
