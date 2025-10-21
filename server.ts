@@ -130,7 +130,10 @@ app.post('/api/sites', async (req, res) => {
   try {
     const site: ISite = req.body;
     const { data, error } = await supabase.from('sites').insert([site]).select().single();
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error for site:', error); // Log dettagliato dell'errore Supabase
+      throw error;
+    }
     res.status(201).json(data);
   } catch (error: any) {
     console.error(error);
@@ -142,7 +145,10 @@ app.put('/api/sites/:id', async (req, res) => {
   try {
     const site: Partial<ISite> = req.body;
     const { data, error } = await supabase.from('sites').update(site).eq('id', req.params.id).select().single();
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error for site:', error); // Log dettagliato dell'errore Supabase
+      throw error;
+    }
     if (!data) return res.status(404).json({ error: 'Sito non trovato' });
     res.json(data);
   } catch (error: any) {
@@ -154,7 +160,10 @@ app.put('/api/sites/:id', async (req, res) => {
 app.delete('/api/sites/:id', async (req, res) => {
   try {
     const { error } = await supabase.from('sites').delete().eq('id', req.params.id);
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase delete error for site:', error); // Log dettagliato dell'errore Supabase
+      throw error;
+    }
     res.json({ message: 'Sito eliminato' });
   } catch (error: any) {
     console.error(error);
@@ -192,7 +201,10 @@ app.post('/api/users', async (req, res) => {
   try {
     const user: IUser = req.body;
     const { data, error } = await supabase.from('users').insert([user]).select().single();
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error for user:', error); // Log dettagliato dell'errore Supabase
+      throw error;
+    }
     res.status(201).json(data);
   } catch (error: any) {
     console.error(error);
@@ -204,7 +216,10 @@ app.put('/api/users/:id', async (req, res) => {
   try {
     const user: Partial<IUser> = req.body;
     const { data, error } = await supabase.from('users').update(user).eq('id', req.params.id).select().single();
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error for user:', error); // Log dettagliato dell'errore Supabase
+      throw error;
+    }
     if (!data) return res.status(404).json({ error: 'Utente non trovato' });
     res.json(data);
   } catch (error: any) {
@@ -216,7 +231,10 @@ app.put('/api/users/:id', async (req, res) => {
 app.delete('/api/users/:id', async (req, res) => {
   try {
     const { error } = await supabase.from('users').delete().eq('id', req.params.id);
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase delete error for user:', error); // Log dettagliato dell'errore Supabase
+      throw error;
+    }
     res.json({ message: 'Utente eliminato' });
   } catch (error: any) {
     console.error(error);
@@ -254,7 +272,10 @@ app.post('/api/tasks', async (req, res) => {
   try {
     const task: ITask = req.body;
     const { data, error } = await supabase.from('tasks').insert([task]).select().single();
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error for task:', error); // Log dettagliato dell'errore Supabase
+      throw error;
+    }
     res.status(201).json(data);
   } catch (error: any) {
     console.error(error);
@@ -266,7 +287,10 @@ app.put('/api/tasks/:id', async (req, res) => {
   try {
     const task: Partial<ITask> = req.body;
     const { data, error } = await supabase.from('tasks').update(task).eq('id', req.params.id).select().single();
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error for task:', error); // Log dettagliato dell'errore Supabase
+      throw error;
+    }
     if (!data) return res.status(404).json({ error: 'Task non trovato' });
     res.json(data);
   } catch (error: any) {
@@ -278,7 +302,10 @@ app.put('/api/tasks/:id', async (req, res) => {
 app.delete('/api/tasks/:id', async (req, res) => {
   try {
     const { error } = await supabase.from('tasks').delete().eq('id', req.params.id);
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase delete error for task:', error); // Log dettagliato dell'errore Supabase
+      throw error;
+    }
     res.json({ message: 'Task eliminato' });
   } catch (error: any) {
     console.error(error);
