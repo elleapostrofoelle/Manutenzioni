@@ -6,10 +6,11 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import type { Express } from 'express'; // Importa esplicitamente il tipo Express
 
 dotenv.config();
 
-const app = express();
+const app: Express = express(); // Annota 'app' con il tipo Express
 
 app.use(cors());
 app.use(express.json());
