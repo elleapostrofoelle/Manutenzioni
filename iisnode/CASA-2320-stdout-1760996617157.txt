@@ -1,4 +1,0 @@
-[dotenv@17.2.3] injecting env (6) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
-Application started successfully
-Server in ascolto su http://localhost:\\.\pipe\c4378ea8-5c0b-469e-b22f-f001e858e034

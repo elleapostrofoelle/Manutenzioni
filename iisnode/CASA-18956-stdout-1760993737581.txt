@@ -1,4 +1,0 @@
-[dotenv@17.2.3] injecting env (6) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
-Application started successfully
-Server in ascolto su http://localhost:\\.\pipe\be79f44a-26ab-4d3f-8e76-5b3ff1db7510
