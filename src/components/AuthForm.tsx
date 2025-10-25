@@ -45,7 +45,7 @@ const AuthForm: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full bg-blue-200"> {/* Colore diagnostico */}
+    <div className="flex flex-col items-center justify-center w-full h-full"> {/* Rimosso bg-blue-200 */}
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
           {isLogin ? 'Accedi' : 'Registrati'}
