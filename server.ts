@@ -100,28 +100,27 @@ declare global {
 }
 
 // HELPER FUNCTIONS FOR MAPPING DB (camelCase) TO FRONTEND (camelCase)
-// Ora le funzioni di mappatura accedono direttamente ai nomi delle colonne come sono nel DB
 const mapDbSiteToFrontend = (dbSite: any): ISite => ({
   id: dbSite.id,
   name: dbSite.name,
   address: dbSite.address,
   manager: dbSite.manager || undefined,
-  contactPerson: dbSite.contactperson || undefined, // Corretto: usa contactperson
+  contactPerson: dbSite.contactperson || undefined,
   landline: dbSite.landline || undefined,
-  otherContacts: dbSite.othercontacts || undefined, // Corretto: usa othercontacts
+  otherContacts: dbSite.othercontacts || undefined,
   user_id: dbSite.user_id || undefined,
 });
 
 const mapDbTaskToFrontend = (dbTask: any): ITask => ({
   id: dbTask.id,
-  siteId: dbTask.siteid, // Corretto: usa siteid
+  siteId: dbTask.siteid,
   description: dbTask.description,
-  dueDate: dbTask.duedate, // Corretto: usa duedate
+  dueDate: dbTask.duedate,
   status: dbTask.status,
   assignees: dbTask.assignees,
   type: dbTask.type,
-  odlNumber: dbTask.odlnumber || undefined, // Corretto: usa odlnumber
-  startDate: dbTask.startdate || undefined, // Corretto: usa startdate
+  odlNumber: dbTask.odlnumber || undefined,
+  startDate: dbTask.startdate || undefined,
   user_id: dbTask.user_id || undefined,
 });
 
@@ -153,9 +152,9 @@ const authenticate = async (req: Request, res: Response, next: NextFunction) => 
 };
 
 
-// ERROR HANDLER
+// ERROR HANDLER GLOBALE
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled server error:', err.stack); // Logging più dettagliato
+  console.error('Unhandled server error:', err.stack);
   res.status(500).json({ error: err.message || 'Server error' });
 });
 
@@ -176,13 +175,16 @@ app.delete('/api/users/:id', authenticate);
 app.get('/api/sites', async (req, res) => {
   try {
     const { data, error } = await supabase.from('sites').select('*').eq('user_id', req.user!.id);
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error in GET /api/sites:', error);
+      return res.status(500).json({ error: error.message || 'Impossibile ottenere siti' });
+    }
     console.log('Supabase raw data (before mapping):', JSON.stringify(data, null, 2));
     const mappedData = data.map(mapDbSiteToFrontend);
     console.log('Mapped data for frontend (after mapping):', JSON.stringify(mappedData, null, 2));
     res.json(mappedData);
   } catch (error: any) {
-    console.error('Error in GET /api/sites:', error); // Logging più dettagliato
+    console.error('Error in GET /api/sites:', error);
     res.status(500).json({ error: error.message || 'Impossibile ottenere siti' });
   }
 });
@@ -191,12 +193,13 @@ app.get('/api/sites/:id', async (req, res) => {
   try {
     const { data, error } = await supabase.from('sites').select('*').eq('id', req.params.id).eq('user_id', req.user!.id).single();
     if (error) {
+      console.error('Supabase error in GET /api/sites/:id:', error);
       if (error.code === 'PGRST116') return res.status(404).json({ error: 'Sito non trovato' });
-      throw error;
+      return res.status(500).json({ error: error.message || 'Errore nel recupero sito' });
     }
     res.json(mapDbSiteToFrontend(data));
   } catch (error: any) {
-    console.error('Error in GET /api/sites/:id:', error); // Logging più dettagliato
+    console.error('Error in GET /api/sites/:id:', error);
     res.status(500).json({ error: error.message || 'Errore nel recupero sito' });
   }
 });
@@ -210,20 +213,20 @@ app.post('/api/sites', async (req, res) => {
       name: site.name,
       address: site.address,
       manager: site.manager && site.manager.name ? site.manager : {}, 
-      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Corretto: usa contactperson
+      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {},
       landline: site.landline || '',
-      othercontacts: site.otherContacts || [], // Corretto: usa othercontacts
+      othercontacts: site.otherContacts || [],
       user_id: req.user!.id,
     };
     console.log('Site data prepared for Supabase insert:', JSON.stringify(siteToInsert, null, 2));
     const { data, error } = await supabase.from('sites').insert([siteToInsert]).select().single();
     if (error) {
       console.error('Supabase insert error for site:', error);
-      throw error;
+      return res.status(500).json({ error: error.message || 'Impossibile creare sito' });
     }
     res.status(201).json(mapDbSiteToFrontend(data));
   } catch (error: any) {
-    console.error('Error in POST /api/sites:', error); // Logging più dettagliato
+    console.error('Error in POST /api/sites:', error);
     res.status(500).json({ error: error.message || 'Impossibile creare sito' });
   }
 });
@@ -236,20 +239,20 @@ app.put('/api/sites/:id', async (req, res) => {
       name: site.name,
       address: site.address,
       manager: site.manager && site.manager.name ? site.manager : {}, 
-      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Corretto: usa contactperson
+      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {},
       landline: site.landline || '',
-      othercontacts: site.otherContacts || [], // Corretto: usa othercontacts
+      othercontacts: site.otherContacts || [],
     };
     console.log('Site data prepared for Supabase update:', JSON.stringify(siteToUpdate, null, 2));
     const { data, error } = await supabase.from('sites').update(siteToUpdate).eq('id', req.params.id).eq('user_id', req.user!.id).select().single();
     if (error) {
       console.error('Supabase update error for site:', error);
-      throw error;
+      return res.status(500).json({ error: error.message || 'Impossibile aggiornare sito' });
     }
     if (!data) return res.status(404).json({ error: 'Sito non trovato' });
     res.json(mapDbSiteToFrontend(data));
   } catch (error: any) {
-    console.error('Error in PUT /api/sites/:id:', error); // Logging più dettagliato
+    console.error('Error in PUT /api/sites/:id:', error);
     res.status(500).json({ error: error.message || 'Impossibile aggiornare sito' });
   }
 });
@@ -259,11 +262,11 @@ app.delete('/api/sites/:id', async (req, res) => {
     const { error } = await supabase.from('sites').delete().eq('id', req.params.id).eq('user_id', req.user!.id);
     if (error) {
       console.error('Supabase delete error for site:', error);
-      throw error;
+      return res.status(500).json({ error: error.message || 'Impossibile eliminare sito' });
     }
     res.json({ message: 'Sito eliminato' });
   } catch (error: any) {
-    console.error('Error in DELETE /api/sites/:id:', error); // Logging più dettagliato
+    console.error('Error in DELETE /api/sites/:id:', error);
     res.status(500).json({ error: error.message || 'Impossibile eliminare sito' });
   }
 });
@@ -271,32 +274,32 @@ app.delete('/api/sites/:id', async (req, res) => {
 // CRUD USERS
 app.get('/api/users', authenticate, async (req, res) => {
   try {
-    // Per la tabella users, non filtriamo per user_id perché vogliamo che tutti gli utenti autenticati
-    // possano vedere l'elenco delle risorse (altri utenti) per l'assegnazione dei task.
-    // Le policy RLS su Supabase dovrebbero già gestire chi può vedere cosa.
     const { data, error } = await supabase.from('users').select('*');
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error in GET /api/users:', error);
+      return res.status(500).json({ error: error.message || 'Impossibile ottenere utenti' });
+    }
     res.json(data);
   } catch (error: any) {
-    console.error('Error in GET /api/users:', error); // Logging più dettagliato
+    console.error('Error in GET /api/users:', error);
     res.status(500).json({ error: error.message || 'Impossibile ottenere utenti' });
   }
 });
 
 app.get('/api/users/:id', authenticate, async (req, res) => {
   try {
-    // L'accesso a un singolo utente è limitato al proprio profilo per sicurezza
     if (req.params.id !== req.user!.id) {
       return res.status(403).json({ error: 'Non autorizzato ad accedere a questo profilo utente' });
     }
     const { data, error } = await supabase.from('users').select('*').eq('id', req.params.id).single();
     if (error) {
+      console.error('Supabase error in GET /api/users/:id:', error);
       if (error.code === 'PGRST116') return res.status(404).json({ error: 'Utente non trovato' });
-      throw error;
+      return res.status(500).json({ error: error.message || 'Errore nel recupero utente' });
     }
     res.json(data);
   } catch (error: any) {
-    console.error('Error in GET /api/users/:id:', error); // Logging più dettagliato
+    console.error('Error in GET /api/users/:id:', error);
     res.status(500).json({ error: error.message || 'Errore nel recupero utente' });
   }
 });
@@ -304,18 +307,17 @@ app.get('/api/users/:id', authenticate, async (req, res) => {
 app.post('/api/users', async (req, res) => {
   try {
     const user: IUser = req.body;
-    // Assicurati che l'ID dell'utente che si sta creando corrisponda all'ID dell'utente autenticato
     if (user.id !== req.user!.id) {
       return res.status(403).json({ error: 'Non autorizzato a creare questo utente' });
     }
     const { data, error } = await supabase.from('users').insert([user]).select().single();
     if (error) {
       console.error('Supabase insert error for user:', error);
-      throw error;
+      return res.status(500).json({ error: error.message || 'Impossibile creare utente' });
     }
     res.status(201).json(data);
   } catch (error: any) {
-    console.error('Error in POST /api/users:', error); // Logging più dettagliato
+    console.error('Error in POST /api/users:', error);
     res.status(500).json({ error: error.message || 'Impossibile creare utente' });
   }
 });
@@ -323,37 +325,35 @@ app.post('/api/users', async (req, res) => {
 app.put('/api/users/:id', async (req, res) => {
   try {
     const user: Partial<IUser> = req.body;
-    // L'aggiornamento di un utente è limitato al proprio profilo
     if (req.params.id !== req.user!.id) {
       return res.status(403).json({ error: 'Non autorizzato ad aggiornare questo utente' });
     }
     const { data, error } = await supabase.from('users').update(user).eq('id', req.params.id).single();
     if (error) {
       console.error('Supabase update error for user:', error);
-      throw error;
+      return res.status(500).json({ error: error.message || 'Impossibile aggiornare utente' });
     }
     if (!data) return res.status(404).json({ error: 'Utente non trovato' });
     res.json(data);
   } catch (error: any) {
-    console.error('Error in PUT /api/users/:id:', error); // Logging più dettagliato
+    console.error('Error in PUT /api/users/:id:', error);
     res.status(500).json({ error: error.message || 'Impossibile aggiornare utente' });
   }
 });
 
 app.delete('/api/users/:id', async (req, res) => {
   try {
-    // L'eliminazione di un utente è limitata al proprio profilo
     if (req.params.id !== req.user!.id) {
       return res.status(403).json({ error: 'Non autorizzato ad eliminare questo utente' });
     }
     const { error } = await supabase.from('users').delete().eq('id', req.params.id);
     if (error) {
       console.error('Supabase delete error for user:', error);
-      throw error;
+      return res.status(500).json({ error: error.message || 'Impossibile eliminare utente' });
     }
     res.json({ message: 'Utente eliminato' });
   } catch (error: any) {
-    console.error('Error in DELETE /api/users/:id:', error); // Logging più dettagliato
+    console.error('Error in DELETE /api/users/:id:', error);
     res.status(500).json({ error: error.message || 'Impossibile eliminare utente' });
   }
 });
@@ -362,10 +362,13 @@ app.delete('/api/users/:id', async (req, res) => {
 app.get('/api/tasks', async (req, res) => {
   try {
     const { data, error } = await supabase.from('tasks').select('*').eq('user_id', req.user!.id);
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error in GET /api/tasks:', error);
+      return res.status(500).json({ error: error.message || 'Impossibile ottenere task' });
+    }
     res.json(data.map(mapDbTaskToFrontend));
   } catch (error: any) {
-    console.error('Error in GET /api/tasks:', error); // Logging più dettagliato
+    console.error('Error in GET /api/tasks:', error);
     res.status(500).json({ error: error.message || 'Impossibile ottenere task' });
   }
 });
@@ -374,12 +377,13 @@ app.get('/api/tasks/:id', async (req, res) => {
   try {
     const { data, error } = await supabase.from('tasks').select('*').eq('id', req.params.id).eq('user_id', req.user!.id).single();
     if (error) {
+      console.error('Supabase error in GET /api/tasks/:id:', error);
       if (error.code === 'PGRST116') return res.status(404).json({ error: 'Task non trovato' });
-      throw error;
+      return res.status(500).json({ error: error.message || 'Errore nel recupero task' });
     }
     res.json(mapDbTaskToFrontend(data));
   } catch (error: any) {
-    console.error('Error in GET /api/tasks/:id:', error); // Logging più dettagliato
+    console.error('Error in GET /api/tasks/:id:', error);
     res.status(500).json({ error: error.message || 'Errore nel recupero task' });
   }
 });
@@ -389,24 +393,24 @@ app.post('/api/tasks', async (req, res) => {
     const task: ITask = req.body;
     const taskToInsert = {
       id: task.id,
-      siteid: task.siteId, // Corretto: usa siteid
+      siteid: task.siteId,
       description: task.description,
-      duedate: task.dueDate, // Corretto: usa duedate
+      duedate: task.dueDate,
       status: task.status,
       assignees: task.assignees,
       type: task.type,
-      odlnumber: task.odlNumber, // Corretto: usa odlnumber
-      startdate: task.startDate, // Corretto: usa startdate
+      odlnumber: task.odlNumber,
+      startdate: task.startDate,
       user_id: req.user!.id,
     };
     const { data, error } = await supabase.from('tasks').insert([taskToInsert]).select().single();
     if (error) {
       console.error('Supabase insert error for task:', error);
-      throw error;
+      return res.status(500).json({ error: error.message || 'Impossibile creare task' });
     }
     res.status(201).json(mapDbTaskToFrontend(data));
   } catch (error: any) {
-    console.error('Error in POST /api/tasks:', error); // Logging più dettagliato
+    console.error('Error in POST /api/tasks:', error);
     res.status(500).json({ error: error.message || 'Impossibile creare task' });
   }
 });
@@ -420,20 +424,20 @@ app.put('/api/tasks/:id', async (req, res) => {
       assignees: task.assignees,
       type: task.type,
     };
-    if (task.siteId !== undefined) taskToUpdate.siteid = task.siteId; // Corretto: usa siteid
-    if (task.dueDate !== undefined) taskToUpdate.duedate = task.dueDate; // Corretto: usa duedate
-    if (task.odlNumber !== undefined) taskToUpdate.odlnumber = task.odlNumber; // Corretto: usa odlnumber
-    if (task.startDate !== undefined) taskToUpdate.startdate = task.startDate; // Corretto: usa startdate
+    if (task.siteId !== undefined) taskToUpdate.siteid = task.siteId;
+    if (task.dueDate !== undefined) taskToUpdate.duedate = task.dueDate;
+    if (task.odlNumber !== undefined) taskToUpdate.odlnumber = task.odlNumber;
+    if (task.startDate !== undefined) taskToUpdate.startdate = task.startDate;
 
     const { data, error } = await supabase.from('tasks').update(taskToUpdate).eq('id', req.params.id).eq('user_id', req.user!.id).select().single();
     if (error) {
       console.error('Supabase update error for task:', error);
-      throw error;
+      return res.status(500).json({ error: error.message || 'Impossibile aggiornare task' });
     }
     if (!data) return res.status(404).json({ error: 'Task non trovato' });
     res.json(mapDbTaskToFrontend(data));
   } catch (error: any) {
-    console.error('Error in PUT /api/tasks/:id:', error); // Logging più dettagliato
+    console.error('Error in PUT /api/tasks/:id:', error);
     res.status(500).json({ error: error.message || 'Impossibile aggiornare task' });
   }
 });
@@ -443,11 +447,11 @@ app.delete('/api/tasks/:id', async (req, res) => {
     const { error } = await supabase.from('tasks').delete().eq('id', req.params.id).eq('user_id', req.user!.id);
     if (error) {
       console.error('Supabase delete error for task:', error);
-      throw error;
+      return res.status(500).json({ error: error.message || 'Impossibile eliminare task' });
     }
     res.json({ message: 'Task eliminato' });
   } catch (error: any) {
-    console.error('Error in DELETE /api/tasks/:id:', error); // Logging più dettagliato
+    console.error('Error in DELETE /api/tasks/:id:', error);
     res.status(500).json({ error: error.message || 'Impossibile eliminare task' });
   }
 });
