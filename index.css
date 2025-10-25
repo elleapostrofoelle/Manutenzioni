@@ -38,7 +38,8 @@ body {
 
 #root {
   display: flex;
-  height: 100vh;
+  flex-direction: column; /* Assicura che i figli si dispongano in colonna */
+  height: 100%; /* Usa 100% per ereditare da body, che è 100% */
   overflow: hidden;
 }
 
@@ -169,7 +170,7 @@ body {
   flex-grow: 1;
   padding: 2rem;
   overflow-y: auto;
-  height: 100vh;
+  height: 100%; /* Usa 100% per riempire il contenitore flex */
   position: relative; /* For notification bell positioning */
 }
 

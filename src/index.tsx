@@ -651,7 +651,7 @@ const Dashboard = ({ tasks, sites, onCardClick, onTaskClick }: DashboardProps) =
   return (
     <div>
       <div className="header"><h1>Dashboard</h1></div>
-      <div className="card-grid">
+      <div className="card-grid"> {/* This is where card-grid is used */}
         <div className="card overdue dashboard-card-clickable" onClick={() => onCardClick('overdue')}><h3>Scadute</h3><div className="value">{overdueTasks}</div></div>
         <div className="card dashboard-card-clickable" onClick={() => onCardClick('pending')}><h3>Da Fare</h3><div className="value">{pendingTasks}</div></div>
         <div className="card dashboard-card-clickable" onClick={() => onCardClick('in_progress')}><h3>In Corso</h3><div className="value">{inProgressTasks}</div></div>
@@ -1796,8 +1796,9 @@ const App = () => {
   const { session } = useSupabase();
 
   return (
-    // Rimuovo il div wrapper qui per semplificare la gerarchia
-    session ? <MainAppContent /> : <AuthForm />
+    <div className="flex-1"> {/* Usa flex-1 per espandersi all'interno del SupabaseProvider */}
+      {session ? <MainAppContent /> : <AuthForm />}
+    </div>
   );
 };
 
@@ -1805,7 +1806,6 @@ const container = document.getElementById('root');
 const root = createRoot(container!);
 root.render(
   <SupabaseProvider>
-    {/* Il SupabaseProvider ora si espanderà grazie a flex-grow */}
     <App />
   </SupabaseProvider>
 );
