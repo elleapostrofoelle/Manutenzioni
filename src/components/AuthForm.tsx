@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useState } from 'react';
 import { useSupabase } from './SupabaseProvider';
+import * as api from '../api'; // Importa le funzioni API
 
 const AuthForm: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,8 +23,17 @@ const AuthForm: React.FC = () => {
         if (error) throw error;
         setMessage('Login riuscito!');
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
+        
+        // Se la registrazione è riuscita, crea un record corrispondente nella tabella public.users
+        if (data.user && data.session) {
+          await api.saveUser({
+            id: data.user.id,
+            name: data.user.email || 'Nuovo Utente', // Usa l'email come nome predefinito
+            role: 'Tecnico', // Ruolo predefinito
+          }, data.session.access_token); // Passa il token di accesso per la chiamata API
+        }
         setMessage('Registrazione riuscita! Controlla la tua email per la conferma.');
       }
     } catch (error: any) {
