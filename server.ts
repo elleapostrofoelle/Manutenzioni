@@ -68,6 +68,7 @@ export interface ISite {
   contactPerson?: IPersonContact;
   landline?: string;
   otherContacts?: IOtherContact[];
+  user_id?: string; // Aggiunto per l'associazione all'utente
 }
 
 export interface IUser {
@@ -88,6 +89,20 @@ export interface ITask {
   type: 'maintenance' | 'odl';
   odlNumber?: string;
   startDate?: string;
+  user_id?: string; // Aggiunto per l'associazione all'utente
+}
+
+// Estendi l'interfaccia Request di Express per includere l'utente Supabase
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email?: string;
+        // Aggiungi altre proprietà dell'utente se necessario
+      };
+    }
+  }
 }
 
 // HELPER FUNCTIONS FOR MAPPING DB (snake_case) TO FRONTEND (camelCase)
@@ -99,6 +114,7 @@ const mapDbSiteToFrontend = (dbSite: any): ISite => ({
   contactPerson: dbSite.contactperson || undefined, // Mappa da snake_case a camelCase
   landline: dbSite.landline || undefined,
   otherContacts: dbSite.othercontacts || undefined, // Mappa da snake_case a camelCase
+  user_id: dbSite.user_id || undefined,
 });
 
 const mapDbTaskToFrontend = (dbTask: any): ITask => ({
@@ -111,7 +127,35 @@ const mapDbTaskToFrontend = (dbTask: any): ITask => ({
   type: dbTask.type,
   odlNumber: dbTask.odlnumber || undefined, // Mappa da snake_case a camelCase
   startDate: dbTask.startdate || undefined, // Mappa da snake_case a camelCase
+  user_id: dbTask.user_id || undefined,
 });
+
+
+// MIDDLEWARE DI AUTENTICAZIONE
+const authenticate = async (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Authorization header mancante' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'Token di autenticazione mancante' });
+  }
+
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      console.error('Errore verifica token Supabase:', error?.message);
+      return res.status(401).json({ error: 'Token non valido o scaduto' });
+    }
+    req.user = { id: user.id, email: user.email };
+    next();
+  } catch (error: any) {
+    console.error('Errore nel middleware di autenticazione:', error);
+    res.status(500).json({ error: 'Errore interno del server durante l\'autenticazione' });
+  }
+};
 
 
 // ERROR HANDLER
@@ -120,15 +164,25 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({ error: err.message || 'Server error' });
 });
 
-// HEALTH CHECK
+// HEALTH CHECK (non richiede autenticazione)
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
+// Applica il middleware di autenticazione a tutte le rotte API protette
+app.use('/api/sites', authenticate);
+app.use('/api/tasks', authenticate);
+// Per gli utenti, permettiamo di leggere tutti gli utenti per l'assegnazione dei task,
+// ma le operazioni di scrittura saranno filtrate per l'utente corrente.
+app.post('/api/users', authenticate);
+app.put('/api/users/:id', authenticate);
+app.delete('/api/users/:id', authenticate);
+
+
 // CRUD SITES
 app.get('/api/sites', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('sites').select('*');
+    const { data, error } = await supabase.from('sites').select('*').eq('user_id', req.user!.id);
     if (error) throw error;
     console.log('Supabase raw data (before mapping):', JSON.stringify(data, null, 2)); // LOG AGGIUNTO
     const mappedData = data.map(mapDbSiteToFrontend); // Store mapped data
@@ -142,7 +196,7 @@ app.get('/api/sites', async (req, res) => {
 
 app.get('/api/sites/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('sites').select('*').eq('id', req.params.id).single();
+    const { data, error } = await supabase.from('sites').select('*').eq('id', req.params.id).eq('user_id', req.user!.id).single();
     if (error) {
       if (error.code === 'PGRST116') return res.status(404).json({ error: 'Sito non trovato' }); // No rows found
       throw error;
@@ -167,6 +221,7 @@ app.post('/api/sites', async (req, res) => {
       contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Modificato
       landline: site.landline || '',
       othercontacts: site.otherContacts || [], // Modificato
+      user_id: req.user!.id, // Associa il sito all'utente autenticato
     };
     console.log('Site data prepared for Supabase insert:', JSON.stringify(siteToInsert, null, 2)); // Log dettagliato
     const { data, error } = await supabase.from('sites').insert([siteToInsert]).select().single();
@@ -195,7 +250,7 @@ app.put('/api/sites/:id', async (req, res) => {
       othercontacts: site.otherContacts || [], // Modificato
     };
     console.log('Site data prepared for Supabase update:', JSON.stringify(siteToUpdate, null, 2)); // Log dettagliato
-    const { data, error } = await supabase.from('sites').update(siteToUpdate).eq('id', req.params.id).select().single();
+    const { data, error } = await supabase.from('sites').update(siteToUpdate).eq('id', req.params.id).eq('user_id', req.user!.id).select().single();
     if (error) {
       console.error('Supabase update error for site:', error); // Log dettagliato dell'errore Supabase
       throw error;
@@ -210,7 +265,7 @@ app.put('/api/sites/:id', async (req, res) => {
 
 app.delete('/api/sites/:id', async (req, res) => {
   try {
-    const { error } = await supabase.from('sites').delete().eq('id', req.params.id);
+    const { error } = await supabase.from('sites').delete().eq('id', req.params.id).eq('user_id', req.user!.id);
     if (error) {
       console.error('Supabase delete error for site:', error); // Log dettagliato dell'errore Supabase
       throw error;
@@ -223,7 +278,8 @@ app.delete('/api/sites/:id', async (req, res) => {
 });
 
 // CRUD USERS
-app.get('/api/users', async (req, res) => {
+// Permetti a tutti gli utenti autenticati di leggere tutti gli utenti (per l'assegnazione dei task)
+app.get('/api/users', authenticate, async (req, res) => {
   try {
     const { data, error } = await supabase.from('users').select('*');
     if (error) throw error;
@@ -234,8 +290,12 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-app.get('/api/users/:id', async (req, res) => {
+app.get('/api/users/:id', authenticate, async (req, res) => {
   try {
+    // Un utente può vedere solo il proprio profilo utente
+    if (req.params.id !== req.user!.id) {
+      return res.status(403).json({ error: 'Non autorizzato ad accedere a questo profilo utente' });
+    }
     const { data, error } = await supabase.from('users').select('*').eq('id', req.params.id).single();
     if (error) {
       if (error.code === 'PGRST116') return res.status(404).json({ error: 'Utente non trovato' });
@@ -251,6 +311,10 @@ app.get('/api/users/:id', async (req, res) => {
 app.post('/api/users', async (req, res) => {
   try {
     const user: IUser = req.body;
+    // Assicurati che l'ID dell'utente nel corpo della richiesta corrisponda all'utente autenticato
+    if (user.id !== req.user!.id) {
+      return res.status(403).json({ error: 'Non autorizzato a creare questo utente' });
+    }
     const { data, error } = await supabase.from('users').insert([user]).select().single();
     if (error) {
       console.error('Supabase insert error for user:', error); // Log dettagliato dell'errore Supabase
@@ -266,7 +330,11 @@ app.post('/api/users', async (req, res) => {
 app.put('/api/users/:id', async (req, res) => {
   try {
     const user: Partial<IUser> = req.body;
-    const { data, error } = await supabase.from('users').update(user).eq('id', req.params.id).select().single();
+    // Assicurati che l'ID dell'utente nella richiesta corrisponda all'utente autenticato
+    if (req.params.id !== req.user!.id) {
+      return res.status(403).json({ error: 'Non autorizzato ad aggiornare questo utente' });
+    }
+    const { data, error } = await supabase.from('users').update(user).eq('id', req.params.id).single();
     if (error) {
       console.error('Supabase update error for user:', error); // Log dettagliato dell'errore Supabase
       throw error;
@@ -281,6 +349,10 @@ app.put('/api/users/:id', async (req, res) => {
 
 app.delete('/api/users/:id', async (req, res) => {
   try {
+    // Assicurati che l'ID dell'utente nella richiesta corrisponda all'utente autenticato
+    if (req.params.id !== req.user!.id) {
+      return res.status(403).json({ error: 'Non autorizzato ad eliminare questo utente' });
+    }
     const { error } = await supabase.from('users').delete().eq('id', req.params.id);
     if (error) {
       console.error('Supabase delete error for user:', error); // Log dettagliato dell'errore Supabase
@@ -296,7 +368,7 @@ app.delete('/api/users/:id', async (req, res) => {
 // CRUD TASKS
 app.get('/api/tasks', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('tasks').select('*');
+    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', req.user!.id);
     if (error) throw error;
     res.json(data.map(mapDbTaskToFrontend)); // Applica la mappatura
   } catch (error: any) {
@@ -307,7 +379,7 @@ app.get('/api/tasks', async (req, res) => {
 
 app.get('/api/tasks/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('tasks').select('*').eq('id', req.params.id).single();
+    const { data, error } = await supabase.from('tasks').select('*').eq('id', req.params.id).eq('user_id', req.user!.id).single();
     if (error) {
       if (error.code === 'PGRST116') return res.status(404).json({ error: 'Task non trovato' });
       throw error;
@@ -333,6 +405,7 @@ app.post('/api/tasks', async (req, res) => {
       type: task.type,
       odlnumber: task.odlNumber, // Modificato
       startdate: task.startDate, // Modificato
+      user_id: req.user!.id, // Associa il task all'utente autenticato
     };
     const { data, error } = await supabase.from('tasks').insert([taskToInsert]).select().single();
     if (error) {
@@ -362,7 +435,7 @@ app.put('/api/tasks/:id', async (req, res) => {
     if (task.odlNumber !== undefined) taskToUpdate.odlnumber = task.odlNumber; // Modificato
     if (task.startDate !== undefined) taskToUpdate.startdate = task.startDate; // Modificato
 
-    const { data, error } = await supabase.from('tasks').update(taskToUpdate).eq('id', req.params.id).select().single();
+    const { data, error } = await supabase.from('tasks').update(taskToUpdate).eq('id', req.params.id).eq('user_id', req.user!.id).select().single();
     if (error) {
       console.error('Supabase update error for task:', error); // Log dettagliato dell'errore Supabase
       throw error;
@@ -377,7 +450,7 @@ app.put('/api/tasks/:id', async (req, res) => {
 
 app.delete('/api/tasks/:id', async (req, res) => {
   try {
-    const { error } = await supabase.from('tasks').delete().eq('id', req.params.id);
+    const { error } = await supabase.from('tasks').delete().eq('id', req.params.id).eq('user_id', req.user!.id);
     if (error) {
       console.error('Supabase delete error for task:', error); // Log dettagliato dell'errore Supabase
       throw error;

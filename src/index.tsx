@@ -1332,11 +1332,12 @@ const MainAppContent = () => { // Renamed App to MainAppContent
         const loadData = async () => {
             try {
                 setIsLoading(true);
+                const accessToken = session?.access_token; // Ottieni il token di accesso
                 const [sitesData, usersData, tasksData, maintenanceData] = await Promise.all([
-                    api.getSites(),
-                    api.getUsers(),
-                    api.getTasks(),
-                    api.getMaintenanceActivities()
+                    api.getSites(accessToken),
+                    api.getUsers(accessToken),
+                    api.getTasks(accessToken),
+                    api.getMaintenanceActivities() // Questa non richiede autenticazione
                 ]);
                 setSites(sitesData);
                 setUsers(usersData);
@@ -1349,8 +1350,16 @@ const MainAppContent = () => { // Renamed App to MainAppContent
                 setIsLoading(false);
             }
         };
-        loadData();
-    }, []);
+        if (session) { // Carica i dati solo se c'è una sessione attiva
+            loadData();
+        } else {
+            setIsLoading(false); // Se non c'è sessione, non caricare e non mostrare spinner indefinitamente
+            setSites([]);
+            setUsers([]);
+            setTasks([]);
+            setNotifications([]);
+        }
+    }, [session]); // Dipende dalla sessione
     
     useEffect(() => {
         const now = new Date();
@@ -1461,7 +1470,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
                 const proceed = window.confirm(`Attenzione: Le seguenti risorse hanno già impegni concomitanti:\n\n- ${conflictingAssignees.join('\n- ')}\n\nVuoi procedere comunque?`);
                 if (!proceed) return;
             }
-            const savedTask = await api.addTask(taskData);
+            const savedTask = await api.addTask(taskData, session?.access_token); // Passa il token
             setTasks(prevTasks => [...prevTasks, savedTask].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
             setError(null); // Clear any previous error
         } catch (err: any) {
@@ -1472,7 +1481,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
   
   const handleSaveSite = async (site: ISite) => {
     try {
-        const savedSite = await api.saveSite(site);
+        const savedSite = await api.saveSite(site, session?.access_token); // Passa il token
         const siteExists = sites.some((s: ISite) => s.id === savedSite.id);
         if (siteExists) {
             setSites(sites.map((s: ISite) => s.id === savedSite.id ? savedSite : s));
@@ -1488,7 +1497,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
 
   const handleSaveUser = async (user: IUser) => {
     try {
-        const savedUser = await api.saveUser(user);
+        const savedUser = await api.saveUser(user, session?.access_token); // Passa il token
         const userExists = users.some((u: IUser) => u.id === savedUser.id);
         if (userExists) {
         setUsers(users.map((u: IUser) => u.id === savedUser.id ? savedUser : u));
@@ -1524,7 +1533,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
             if (!proceed) return;
         }
         
-        const updatedTask = await api.updateTask(taskId, updates);
+        const updatedTask = await api.updateTask(taskId, updates, session?.access_token); // Passa il token
         setTasks(tasks.map((t: ITask) => t.id === taskId ? updatedTask : t));
         setError(null); // Clear any previous error
     } catch (err: any) {
@@ -1535,7 +1544,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
 
   const handleDeleteTask = async (taskId: string) => {
       try {
-          await api.deleteTask(taskId);
+          await api.deleteTask(taskId, session?.access_token); // Passa il token
           setTasks(tasks.filter((t: ITask) => t.id !== taskId));
           setError(null); // Clear any previous error
       } catch (err: any) {
