@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useSupabase } from './SupabaseProvider';
-import * => from '../api'; // Importa le funzioni API
+import * as api from '../api'; // Importa le funzioni API
 
 const AuthForm: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -45,7 +45,7 @@ const AuthForm: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full bg-gray-100">
+    <div className="flex flex-col items-center justify-center w-full h-full bg-blue-200"> {/* Colore diagnostico */}
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
           {isLogin ? 'Accedi' : 'Registrati'}

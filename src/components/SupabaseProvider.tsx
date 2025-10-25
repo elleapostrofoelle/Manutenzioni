@@ -50,7 +50,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
 
   return (
     <SupabaseContext.Provider value={{ supabase, session }}>
-      <div className="w-full h-full"> {/* Added this wrapper div */}
+      <div className="w-full h-full bg-red-200"> {/* Colore diagnostico */}
         {children}
       </div>
     </SupabaseContext.Provider>
