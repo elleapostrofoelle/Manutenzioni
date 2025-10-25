@@ -16,14 +16,16 @@ BEGIN
 END
 $$;
 
--- Rendi user_id NOT NULL in public.sites (se non lo è già)
--- IMPORTANTE: Se ci sono righe esistenti in public.sites con user_id NULL, questa operazione fallirà.
--- In tal caso, devi prima aggiornare manualmente quelle righe assegnando un user_id valido.
--- Esempio: UPDATE public.sites SET user_id = (SELECT id FROM auth.users LIMIT 1) WHERE user_id IS NULL;
+-- Rendi user_id NOT NULL in public.sites (se non lo è già E non ci sono valori NULL)
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='sites' AND column_name='user_id' AND is_nullable='YES') THEN
-        ALTER TABLE public.sites ALTER COLUMN user_id SET NOT NULL;
+        -- Controlla se ci sono valori NULL prima di tentare di impostare NOT NULL
+        IF NOT EXISTS (SELECT 1 FROM public.sites WHERE user_id IS NULL) THEN
+            ALTER TABLE public.sites ALTER COLUMN user_id SET NOT NULL;
+        ELSE
+            RAISE NOTICE 'Skipping SET NOT NULL for public.sites.user_id because NULL values exist. Please update existing rows after user registration.';
+        END IF;
     END IF;
 END
 $$;
@@ -68,13 +70,16 @@ BEGIN
 END
 $$;
 
--- Rendi user_id NOT NULL in public.tasks (se non lo è già)
--- IMPORTANTE: Se ci sono righe esistenti in public.tasks con user_id NULL, questa operazione fallirà.
--- In tal caso, devi prima aggiornare manualmente quelle righe assegnando un user_id valido.
+-- Rendi user_id NOT NULL in public.tasks (se non lo è già E non ci sono valori NULL)
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='tasks' AND column_name='user_id' AND is_nullable='YES') THEN
-        ALTER TABLE public.tasks ALTER COLUMN user_id SET NOT NULL;
+        -- Controlla se ci sono valori NULL prima di tentare di impostare NOT NULL
+        IF NOT EXISTS (SELECT 1 FROM public.tasks WHERE user_id IS NULL) THEN
+            ALTER TABLE public.tasks ALTER COLUMN user_id SET NOT NULL;
+        ELSE
+            RAISE NOTICE 'Skipping SET NOT NULL for public.tasks.user_id because NULL values exist. Please update existing rows after user registration.';
+        END IF;
     END IF;
 END
 $$;
