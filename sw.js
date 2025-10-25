@@ -1,6 +1,6 @@
 // sw.js
 
-const CACHE_NAME = 'gestione-manutenzioni-v4'; // Incrementato per forzare l'aggiornamento
+const CACHE_NAME = 'gestione-manutenzioni-v5'; // Incrementato per forzare l'aggiornamento
 // Lista delle risorse fondamentali per l'app shell.
 const urlsToCache = [
   '/',
@@ -29,13 +29,12 @@ self.addEventListener('install', event => {
 // Evento di attivazione: viene eseguito quando il service worker viene attivato.
 self.addEventListener('activate', event => {
   console.log('Service Worker activating. Cache name:', CACHE_NAME); // Added log
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          // Se la cache non è nella whitelist, viene eliminata.
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          // Elimina tutte le cache che NON corrispondono al CACHE_NAME corrente
+          if (cacheName !== CACHE_NAME) {
             console.log('Eliminazione vecchia cache:', cacheName);
             return caches.delete(cacheName);
           }
