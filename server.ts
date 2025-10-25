@@ -100,28 +100,27 @@ declare global {
 }
 
 // HELPER FUNCTIONS FOR MAPPING DB (camelCase) TO FRONTEND (camelCase)
-// Ora le funzioni di mappatura accedono direttamente ai nomi delle colonne come sono nel DB
 const mapDbSiteToFrontend = (dbSite: any): ISite => ({
   id: dbSite.id,
   name: dbSite.name,
   address: dbSite.address,
   manager: dbSite.manager || undefined,
-  contactPerson: dbSite.contactperson || undefined, // Corretto: usa contactperson
+  contactPerson: dbSite.contactperson || undefined,
   landline: dbSite.landline || undefined,
-  otherContacts: dbSite.othercontacts || undefined, // Corretto: usa othercontacts
+  otherContacts: dbSite.othercontacts || undefined,
   user_id: dbSite.user_id || undefined,
 });
 
 const mapDbTaskToFrontend = (dbTask: any): ITask => ({
   id: dbTask.id,
-  siteId: dbTask.siteid, // Corretto: usa siteid
+  siteId: dbTask.siteid,
   description: dbTask.description,
-  dueDate: dbTask.duedate, // Corretto: usa duedate
+  dueDate: dbTask.duedate,
   status: dbTask.status,
   assignees: dbTask.assignees,
   type: dbTask.type,
-  odlNumber: dbTask.odlnumber || undefined, // Corretto: usa odlnumber
-  startDate: dbTask.startdate || undefined, // Corretto: usa startdate
+  odlNumber: dbTask.odlnumber || undefined,
+  startDate: dbTask.startdate || undefined,
   user_id: dbTask.user_id || undefined,
 });
 
@@ -148,15 +147,22 @@ const authenticate = async (req: Request, res: Response, next: NextFunction) => 
     next();
   } catch (error: any) {
     console.error('Errore nel middleware di autenticazione:', error);
-    res.status(500).json({ error: 'Errore interno del server durante l\'autenticazione' });
+    res.status(500).json({ 
+      error: error.message || 'Errore interno del server durante l\'autenticazione',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 };
 
 
-// ERROR HANDLER
+// ERROR HANDLER GLOBALE (per errori non catturati dalle singole rotte)
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled server error:', err.stack); // Logging più dettagliato
-  res.status(500).json({ error: err.message || 'Server error' });
+  console.error('Unhandled server error (global handler):', err);
+  res.status(500).json({ 
+    error: err.message || 'Server error globale', 
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(err, Object.getOwnPropertyNames(err)) : undefined
+  });
 });
 
 // HEALTH CHECK (non richiede autenticazione)
@@ -182,8 +188,13 @@ app.get('/api/sites', async (req, res) => {
     console.log('Mapped data for frontend (after mapping):', JSON.stringify(mappedData, null, 2));
     res.json(mappedData);
   } catch (error: any) {
-    console.error('Error in GET /api/sites:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile ottenere siti' });
+    console.error(`Error in GET /api/sites:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile ottenere siti', 
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
@@ -196,8 +207,13 @@ app.get('/api/sites/:id', async (req, res) => {
     }
     res.json(mapDbSiteToFrontend(data));
   } catch (error: any) {
-    console.error('Error in GET /api/sites/:id:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Errore nel recupero sito' });
+    console.error(`Error in GET /api/sites/:id:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Errore nel recupero sito',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
@@ -210,9 +226,9 @@ app.post('/api/sites', async (req, res) => {
       name: site.name,
       address: site.address,
       manager: site.manager && site.manager.name ? site.manager : {}, 
-      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Corretto: usa contactperson
+      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {},
       landline: site.landline || '',
-      othercontacts: site.otherContacts || [], // Corretto: usa othercontacts
+      othercontacts: site.otherContacts || [],
       user_id: req.user!.id,
     };
     console.log('Site data prepared for Supabase insert:', JSON.stringify(siteToInsert, null, 2));
@@ -223,8 +239,13 @@ app.post('/api/sites', async (req, res) => {
     }
     res.status(201).json(mapDbSiteToFrontend(data));
   } catch (error: any) {
-    console.error('Error in POST /api/sites:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile creare sito' });
+    console.error(`Error in POST /api/sites:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile creare sito',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
@@ -236,9 +257,9 @@ app.put('/api/sites/:id', async (req, res) => {
       name: site.name,
       address: site.address,
       manager: site.manager && site.manager.name ? site.manager : {}, 
-      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Corretto: usa contactperson
+      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {},
       landline: site.landline || '',
-      othercontacts: site.otherContacts || [], // Corretto: usa othercontacts
+      othercontacts: site.otherContacts || [],
     };
     console.log('Site data prepared for Supabase update:', JSON.stringify(siteToUpdate, null, 2));
     const { data, error } = await supabase.from('sites').update(siteToUpdate).eq('id', req.params.id).eq('user_id', req.user!.id).select().single();
@@ -249,8 +270,13 @@ app.put('/api/sites/:id', async (req, res) => {
     if (!data) return res.status(404).json({ error: 'Sito non trovato' });
     res.json(mapDbSiteToFrontend(data));
   } catch (error: any) {
-    console.error('Error in PUT /api/sites/:id:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile aggiornare sito' });
+    console.error(`Error in PUT /api/sites/:id:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile aggiornare sito',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
@@ -263,29 +289,35 @@ app.delete('/api/sites/:id', async (req, res) => {
     }
     res.json({ message: 'Sito eliminato' });
   } catch (error: any) {
-    console.error('Error in DELETE /api/sites/:id:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile eliminare sito' });
+    console.error(`Error in DELETE /api/sites/:id:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile eliminare sito',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
 // CRUD USERS
 app.get('/api/users', authenticate, async (req, res) => {
   try {
-    // Per la tabella users, non filtriamo per user_id perché vogliamo che tutti gli utenti autenticati
-    // possano vedere l'elenco delle risorse (altri utenti) per l'assegnazione dei task.
-    // Le policy RLS su Supabase dovrebbero già gestire chi può vedere cosa.
     const { data, error } = await supabase.from('users').select('*');
     if (error) throw error;
     res.json(data);
   } catch (error: any) {
-    console.error('Error in GET /api/users:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile ottenere utenti' });
+    console.error(`Error in GET /api/users:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile ottenere utenti',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
 app.get('/api/users/:id', authenticate, async (req, res) => {
   try {
-    // L'accesso a un singolo utente è limitato al proprio profilo per sicurezza
     if (req.params.id !== req.user!.id) {
       return res.status(403).json({ error: 'Non autorizzato ad accedere a questo profilo utente' });
     }
@@ -296,15 +328,19 @@ app.get('/api/users/:id', authenticate, async (req, res) => {
     }
     res.json(data);
   } catch (error: any) {
-    console.error('Error in GET /api/users/:id:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Errore nel recupero utente' });
+    console.error(`Error in GET /api/users/:id:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Errore nel recupero utente',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
 app.post('/api/users', async (req, res) => {
   try {
     const user: IUser = req.body;
-    // Assicurati che l'ID dell'utente che si sta creando corrisponda all'ID dell'utente autenticato
     if (user.id !== req.user!.id) {
       return res.status(403).json({ error: 'Non autorizzato a creare questo utente' });
     }
@@ -315,15 +351,19 @@ app.post('/api/users', async (req, res) => {
     }
     res.status(201).json(data);
   } catch (error: any) {
-    console.error('Error in POST /api/users:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile creare utente' });
+    console.error(`Error in POST /api/users:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile creare utente',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
 app.put('/api/users/:id', async (req, res) => {
   try {
     const user: Partial<IUser> = req.body;
-    // L'aggiornamento di un utente è limitato al proprio profilo
     if (req.params.id !== req.user!.id) {
       return res.status(403).json({ error: 'Non autorizzato ad aggiornare questo utente' });
     }
@@ -335,14 +375,18 @@ app.put('/api/users/:id', async (req, res) => {
     if (!data) return res.status(404).json({ error: 'Utente non trovato' });
     res.json(data);
   } catch (error: any) {
-    console.error('Error in PUT /api/users/:id:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile aggiornare utente' });
+    console.error(`Error in PUT /api/users/:id:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile aggiornare utente',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
 app.delete('/api/users/:id', async (req, res) => {
   try {
-    // L'eliminazione di un utente è limitata al proprio profilo
     if (req.params.id !== req.user!.id) {
       return res.status(403).json({ error: 'Non autorizzato ad eliminare questo utente' });
     }
@@ -353,8 +397,13 @@ app.delete('/api/users/:id', async (req, res) => {
     }
     res.json({ message: 'Utente eliminato' });
   } catch (error: any) {
-    console.error('Error in DELETE /api/users/:id:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile eliminare utente' });
+    console.error(`Error in DELETE /api/users/:id:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile eliminare utente',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
@@ -365,8 +414,13 @@ app.get('/api/tasks', async (req, res) => {
     if (error) throw error;
     res.json(data.map(mapDbTaskToFrontend));
   } catch (error: any) {
-    console.error('Error in GET /api/tasks:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile ottenere task' });
+    console.error(`Error in GET /api/tasks:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile ottenere task',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
@@ -379,8 +433,13 @@ app.get('/api/tasks/:id', async (req, res) => {
     }
     res.json(mapDbTaskToFrontend(data));
   } catch (error: any) {
-    console.error('Error in GET /api/tasks/:id:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Errore nel recupero task' });
+    console.error(`Error in GET /api/tasks/:id:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Errore nel recupero task',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
@@ -389,14 +448,14 @@ app.post('/api/tasks', async (req, res) => {
     const task: ITask = req.body;
     const taskToInsert = {
       id: task.id,
-      siteid: task.siteId, // Corretto: usa siteid
+      siteid: task.siteId,
       description: task.description,
-      duedate: task.dueDate, // Corretto: usa duedate
+      duedate: task.dueDate,
       status: task.status,
       assignees: task.assignees,
       type: task.type,
-      odlnumber: task.odlNumber, // Corretto: usa odlnumber
-      startdate: task.startDate, // Corretto: usa startdate
+      odlnumber: task.odlNumber,
+      startdate: task.startDate,
       user_id: req.user!.id,
     };
     const { data, error } = await supabase.from('tasks').insert([taskToInsert]).select().single();
@@ -406,8 +465,13 @@ app.post('/api/tasks', async (req, res) => {
     }
     res.status(201).json(mapDbTaskToFrontend(data));
   } catch (error: any) {
-    console.error('Error in POST /api/tasks:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile creare task' });
+    console.error(`Error in POST /api/tasks:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile creare task',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
@@ -420,10 +484,10 @@ app.put('/api/tasks/:id', async (req, res) => {
       assignees: task.assignees,
       type: task.type,
     };
-    if (task.siteId !== undefined) taskToUpdate.siteid = task.siteId; // Corretto: usa siteid
-    if (task.dueDate !== undefined) taskToUpdate.duedate = task.dueDate; // Corretto: usa duedate
-    if (task.odlNumber !== undefined) taskToUpdate.odlnumber = task.odlNumber; // Corretto: usa odlnumber
-    if (task.startDate !== undefined) taskToUpdate.startdate = task.startDate; // Corretto: usa startdate
+    if (task.siteId !== undefined) taskToUpdate.siteid = task.siteId;
+    if (task.dueDate !== undefined) taskToUpdate.duedate = task.dueDate;
+    if (task.odlNumber !== undefined) taskToUpdate.odlnumber = task.odlNumber;
+    if (task.startDate !== undefined) taskToUpdate.startdate = task.startDate;
 
     const { data, error } = await supabase.from('tasks').update(taskToUpdate).eq('id', req.params.id).eq('user_id', req.user!.id).select().single();
     if (error) {
@@ -433,8 +497,13 @@ app.put('/api/tasks/:id', async (req, res) => {
     if (!data) return res.status(404).json({ error: 'Task non trovato' });
     res.json(mapDbTaskToFrontend(data));
   } catch (error: any) {
-    console.error('Error in PUT /api/tasks/:id:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile aggiornare task' });
+    console.error(`Error in PUT /api/tasks/:id:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile aggiornare task',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
@@ -447,8 +516,13 @@ app.delete('/api/tasks/:id', async (req, res) => {
     }
     res.json({ message: 'Task eliminato' });
   } catch (error: any) {
-    console.error('Error in DELETE /api/tasks/:id:', error); // Logging più dettagliato
-    res.status(500).json({ error: error.message || 'Impossibile eliminare task' });
+    console.error(`Error in DELETE /api/tasks/:id:`, error);
+    res.status(500).json({ 
+      error: error.message || 'Impossibile eliminare task',
+      details: error.details || error.hint || '',
+      code: error.code || '',
+      fullErrorObject: process.env.NODE_ENV === 'development' ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : undefined
+    });
   }
 });
 
