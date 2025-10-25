@@ -1,3 +1,6 @@
+import dotenv from 'dotenv'; // Importa dotenv
+dotenv.config(); // Carica le variabili d'ambiente all'inizio
+
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
