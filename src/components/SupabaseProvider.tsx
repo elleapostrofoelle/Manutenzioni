@@ -41,6 +41,9 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Log della sessione che viene fornita al contesto
+  console.log('SupabaseProvider: Session provided to context:', session);
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -52,8 +55,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
 
   return (
     <SupabaseContext.Provider value={{ supabase, session }}>
-      {/* Questo div ora occupa l'intera area del suo genitore (#root) e gestisce il layout dei suoi figli */}
-      <div className="w-full h-full bg-red-200 flex flex-col"> {/* Colore diagnostico */}
+      <div className="w-full h-full flex flex-col">
         {children}
       </div>
     </SupabaseContext.Provider>
