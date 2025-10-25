@@ -1796,9 +1796,8 @@ const App = () => {
   const { session } = useSupabase();
 
   return (
-    <div className="w-full h-full"> {/* Aggiunto questo div wrapper */}
-      {session ? <MainAppContent /> : <AuthForm />}
-    </div>
+    // Rimuovo il div wrapper qui per semplificare la gerarchia
+    session ? <MainAppContent /> : <AuthForm />
   );
 };
 
@@ -1806,6 +1805,7 @@ const container = document.getElementById('root');
 const root = createRoot(container!);
 root.render(
   <SupabaseProvider>
+    {/* Il SupabaseProvider ora si espanderà grazie a flex-grow */}
     <App />
   </SupabaseProvider>
 );

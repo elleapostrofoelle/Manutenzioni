@@ -50,7 +50,8 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
 
   return (
     <SupabaseContext.Provider value={{ supabase, session }}>
-      <div className="w-full h-full bg-red-200 flex-grow"> {/* Aggiunto flex-grow */}
+      {/* Aggiunto 'flex-grow' qui per assicurare che il provider si espanda all'interno di #root */}
+      <div className="w-full h-full bg-red-200 flex flex-col flex-grow"> {/* Colore diagnostico */}
         {children}
       </div>
     </SupabaseContext.Provider>
