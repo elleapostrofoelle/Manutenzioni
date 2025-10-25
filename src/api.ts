@@ -55,7 +55,7 @@ export interface INotification {
 // Utilizza un percorso relativo per le API.
 // In sviluppo, Vite proxyerà queste richieste.
 // In produzione, IIS (tramite web.config) le inoltrerà al backend.
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // --- UTILITY FUNCTIONS ---
 const handleResponse = async (response: Response) => {
