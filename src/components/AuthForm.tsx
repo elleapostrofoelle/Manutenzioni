@@ -45,7 +45,7 @@ const AuthForm: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full"> {/* Rimosso bg-blue-200 */}
+    <div className="flex flex-col items-center justify-center w-full h-full">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
           {isLogin ? 'Accedi' : 'Registrati'}
@@ -59,7 +59,7 @@ const AuthForm: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              autoComplete="email" {/* Aggiunto autocomplete */}
+              autoComplete="email"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -71,7 +71,7 @@ const AuthForm: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              autoComplete={isLogin ? "current-password" : "new-password"} {/* Aggiunto autocomplete */}
+              autoComplete={isLogin ? "current-password" : "new-password"}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
