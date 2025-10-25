@@ -2,13 +2,13 @@ import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js'; // Importa il client Supabase
 import cors from 'cors';
-import dotenv from 'dotenv';
+// import dotenv from 'dotenv'; // Rimosso: dotenv.config() verrà chiamato dal file di avvio
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import type { Express } from 'express'; // Importa esplicitamente il tipo Express
 
-dotenv.config();
+// dotenv.config(); // Rimosso: dotenv.config() verrà chiamato dal file di avvio
 
 const app: Express = express(); // Annota 'app' con il tipo Express
 
@@ -44,7 +44,11 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Usa la service rol
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('Variabili d\'ambiente SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY non impostate.');
-  process.exit(1);
+  // Non chiamare process.exit(1) qui, lascia che il file di avvio gestisca l'errore
+  // o che l'applicazione continui a caricarsi con un errore chiaro.
+  // Per ora, lo lascio per debug, ma in produzione potresti volerlo gestire diversamente.
+  // Per il momento, lo lascio per assicurare che l'errore sia visibile se le variabili non sono caricate.
+  process.exit(1); 
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
