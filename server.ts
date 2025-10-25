@@ -137,9 +137,9 @@ app.post('/api/sites', async (req, res) => {
       name: site.name,
       address: site.address,
       manager: site.manager && site.manager.name ? site.manager : {}, 
-      contactPerson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, 
+      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Modificato
       landline: site.landline || '',
-      otherContacts: site.otherContacts || [], 
+      othercontacts: site.otherContacts || [], // Modificato
     };
     console.log('Site data prepared for Supabase insert:', JSON.stringify(siteToInsert, null, 2)); // Log dettagliato
     const { data, error } = await supabase.from('sites').insert([siteToInsert]).select().single();
@@ -163,9 +163,9 @@ app.put('/api/sites/:id', async (req, res) => {
       name: site.name,
       address: site.address,
       manager: site.manager && site.manager.name ? site.manager : {}, 
-      contactPerson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, 
+      contactperson: site.contactPerson && site.contactPerson.name ? site.contactPerson : {}, // Modificato
       landline: site.landline || '',
-      otherContacts: site.otherContacts || [], 
+      othercontacts: site.otherContacts || [], // Modificato
     };
     console.log('Site data prepared for Supabase update:', JSON.stringify(siteToUpdate, null, 2)); // Log dettagliato
     const { data, error } = await supabase.from('sites').update(siteToUpdate).eq('id', req.params.id).select().single();
@@ -298,14 +298,14 @@ app.post('/api/tasks', async (req, res) => {
     // Utilizza i nomi delle colonne camelCase come nell'interfaccia
     const taskToInsert = {
       id: task.id,
-      siteId: task.siteId, 
+      siteid: task.siteId, // Modificato
       description: task.description,
-      dueDate: task.dueDate, 
+      duedate: task.dueDate, // Modificato
       status: task.status,
       assignees: task.assignees,
       type: task.type,
-      odlNumber: task.odlNumber, 
-      startDate: task.startDate, 
+      odlnumber: task.odlNumber, // Modificato
+      startdate: task.startDate, // Modificato
     };
     const { data, error } = await supabase.from('tasks').insert([taskToInsert]).select().single();
     if (error) {
@@ -330,10 +330,10 @@ app.put('/api/tasks/:id', async (req, res) => {
       type: task.type,
     };
     // Conditionally add fields that might be undefined
-    if (task.siteId !== undefined) (taskToUpdate as any).siteId = task.siteId;
-    if (task.dueDate !== undefined) (taskToUpdate as any).dueDate = task.dueDate;
-    if (task.odlNumber !== undefined) (taskToUpdate as any).odlNumber = task.odlNumber;
-    if (task.startDate !== undefined) (taskToUpdate as any).startDate = task.startDate;
+    if (task.siteId !== undefined) (taskToUpdate as any).siteid = task.siteId; // Modificato
+    if (task.dueDate !== undefined) (taskToUpdate as any).duedate = task.dueDate; // Modificato
+    if (task.odlNumber !== undefined) (taskToUpdate as any).odlnumber = task.odlNumber; // Modificato
+    if (task.startDate !== undefined) (taskToUpdate as any).startdate = task.startDate; // Modificato
 
     const { data, error } = await supabase.from('tasks').update(taskToUpdate).eq('id', req.params.id).select().single();
     if (error) {
