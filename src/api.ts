@@ -55,7 +55,8 @@ export interface INotification {
 // Utilizza un percorso relativo per le API.
 // In sviluppo, Vite proxyerà queste richieste.
 // In produzione, IIS (tramite web.config) le inoltrerà al backend.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+// Modificato per forzare l'uso dell'origine corrente in sviluppo.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `${window.location.origin}/api`;
 console.log('API_BASE_URL in src/api.ts:', API_BASE_URL); // Aggiunto per debug
 
 // --- UTILITY FUNCTIONS ---
