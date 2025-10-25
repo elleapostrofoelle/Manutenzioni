@@ -27,11 +27,13 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('SupabaseProvider: Initial session check. Session:', session);
       setSession(session);
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('SupabaseProvider: Auth state changed. Event:', _event, 'New Session:', session);
       setSession(session);
       setLoading(false);
     });

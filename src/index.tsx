@@ -1620,7 +1620,15 @@ const MainAppContent = () => { // Renamed App to MainAppContent
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    console.log('Attempting to log out...');
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error during logout:', error);
+      setError(`Errore durante il logout: ${error.message}`);
+    } else {
+      console.log('Logout successful. Session should be null now.');
+      setError(null); // Clear any previous error
+    }
   };
   
   if (isLoading) {
