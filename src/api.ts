@@ -61,16 +61,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 const handleResponse = async (response: Response) => {
   if (!response.ok) {
     const errorBody = await response.text(); // Leggi il corpo della risposta per più dettagli
-    let errorMessage = errorBody;
-    try {
-      const parsedError = JSON.parse(errorBody);
-      if (parsedError.error) {
-        errorMessage = parsedError.error;
-      }
-    } catch (e) {
-      // Non è un errore JSON, usa il testo grezzo
-    }
-    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorMessage}`);
+    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorBody}`);
   }
   return response.json();
 };
@@ -161,16 +152,7 @@ export const deleteTask = async (taskId: string, accessToken?: string): Promise<
   });
   if (!response.ok) {
     const errorBody = await response.text();
-    let errorMessage = errorBody;
-    try {
-      const parsedError = JSON.parse(errorBody);
-      if (parsedError.error) {
-        errorMessage = parsedError.error;
-      }
-    } catch (e) {
-      // Not a JSON error, use raw text
-    }
-    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorMessage}`);
+    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorBody}`);
   }
 };
 
