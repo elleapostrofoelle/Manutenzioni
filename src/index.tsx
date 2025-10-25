@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as api from './api.ts'; // Modificato per usare il percorso relativo
 import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.ts'; // Modificato per usare il percorso relativo
+import { SupabaseProvider, useSupabase } from './components/SupabaseProvider';
+import AuthForm from './components/AuthForm';
 
 // Global type for BeforeInstallPromptEvent if not already in your environment (e.g., tsconfig lib)
 declare global {
@@ -1287,7 +1289,9 @@ const checkAssignmentConflicts = (
 
 // --- COMPONENTE PRINCIPALE APP ---
 
-const App = () => {
+const MainAppContent = () => { // Renamed App to MainAppContent
+  const { session, supabase } = useSupabase(); // Get session and supabase client from context
+
   const [view, setView] = useState<string>('dashboard');
   const [sites, setSites] = useState<ISite[]>([]);
   const [users, setUsers] = useState<IUser[]>([]);
@@ -1605,6 +1609,10 @@ const App = () => {
       setSelectedSiteId(null);
       setView(viewName);
   };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
   
   if (isLoading) {
     return <div className="loading-container"><div className="loading-spinner"></div></div>;
@@ -1752,6 +1760,14 @@ const App = () => {
                 </button>
             </div>
         )}
+        {session && (
+            <div className="sidebar-footer" style={{marginTop: '1rem'}}>
+                <button className="btn-install" onClick={handleLogout}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span>Esci ({session.user?.email})</span>
+                </button>
+            </div>
+        )}
       </aside>
       <main className="main-content">
         <NotificationBell
@@ -1767,6 +1783,20 @@ const App = () => {
   );
 };
 
+const App = () => {
+  const { session } = useSupabase();
+
+  return (
+    <>
+      {session ? <MainAppContent /> : <AuthForm />}
+    </>
+  );
+};
+
 const container = document.getElementById('root');
 const root = createRoot(container!);
-root.render(<App />);
+root.render(
+  <SupabaseProvider>
+    <App />
+  </SupabaseProvider>
+);
