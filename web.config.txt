@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <system.webServer>
+    <handlers>
+      <!-- Aggiunge il gestore iisnode per app.js -->
+      <add name="iisnode" path="app.js" verb="*" modules="iisnode" />
+    </handlers>
+    <defaultDocument enabled="true">
+      <!-- Assicura che app.js sia il documento predefinito, così IIS passa le richieste root ad esso -->
+      <files>
+        <add value="app.js" />
+      </files>
+    </defaultDocument>
+    <rewrite>
+      <rules>
+        <!-- Regola per prevenire l'accesso diretto a app.js/debug -->
+        <rule name="NodeInspector" patternSyntax="ECMAScript" stopProcessing="true">
+          <match url="^app.js\/debug[\/]?([0-9]+)?$" />
+        </rule>
+        <!-- Regola per instradare tutte le richieste a app.js, a meno che non siano per file o directory esistenti -->
+        <rule name="DynamicContent">
+          <conditions>
+            <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+          </conditions>
+          <action type="Rewrite" url="app.js" />
+        </rule>
+      </rules>
+    </rewrite>
+    <security>
+      <requestFiltering>
+        <hiddenSegments>
+          <add segment="node_modules" />
+          <add segment="iisnode" />
+          <!-- Nasconde la cartella dist dall'accesso diretto di IIS, poiché sarà servita da Node.js -->
+          <add segment="dist" /> 
+        </hiddenSegments>
+      </requestFiltering>
+    </security>
+    <iisnode node_env="production" nodeProcessCommandLine="&quot;%programfiles%\nodejs\node.exe&quot;" loggingEnabled="true" logDirectory="iisnode" stdoutEnabled="true" watchedFiles="*.js;iisnode.yml" maxConcurrentRequestsPerProcess="1024" maxNamedPipeConnectionRetry="200" namedPipeConnectionRetryDelay="250" maxNamedPipeConnectionPoolSize="512" initialRequestBufferSize="4096" maxRequestBufferSize="65536" uncFileChangesPollingInterval="5000" gracefulShutdownTimeout="60000" asyncCompletionThreadCount="0" maxLogFileSizeInKB="128" devErrorsEnabled="true" flushResponse="false" enableXFF="false" promoteServerVars="ALL" configOverrides="iisnode.yml" />
+        <tracing>
+            <traceFailedRequests>
+                <add path="*">
+                    <traceAreas>
+                        <add provider="ASP" verbosity="Verbose" />
+                        <add provider="ASPNET" areas="Infrastructure,Module,Page,AppServices" verbosity="Verbose" />
+                        <add provider="ISAPI Extension" verbosity="Verbose" />
+                        <add provider="WWW Server" areas="Authentication,Security,Filter,StaticFile,CGI,Compression,Cache,RequestNotifications,Module,FastCGI,WebSocket" verbosity="Verbose" />
+                    </traceAreas>
+                    <failureDefinitions statusCodes="500,401" />
+                </add>
+            </traceFailedRequests>
+        </tracing>
+  </system.webServer>
+</configuration>
