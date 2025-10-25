@@ -1,6 +1,6 @@
 // sw.js
 
-const CACHE_NAME = 'gestione-manutenzioni-v3';
+const CACHE_NAME = 'gestione-manutenzioni-v4'; // Incrementato per forzare l'aggiornamento
 // Lista delle risorse fondamentali per l'app shell.
 const urlsToCache = [
   '/',
@@ -11,6 +11,7 @@ const urlsToCache = [
 
 // Evento di installazione: viene eseguito quando il service worker viene installato.
 self.addEventListener('install', event => {
+  console.log('Service Worker installing. Cache name:', CACHE_NAME); // Added log
   // Esegui i passaggi di installazione
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -27,6 +28,7 @@ self.addEventListener('install', event => {
 
 // Evento di attivazione: viene eseguito quando il service worker viene attivato.
 self.addEventListener('activate', event => {
+  console.log('Service Worker activating. Cache name:', CACHE_NAME); // Added log
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
