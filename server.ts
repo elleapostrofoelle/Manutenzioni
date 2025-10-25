@@ -130,7 +130,10 @@ app.get('/api/sites', async (req, res) => {
   try {
     const { data, error } = await supabase.from('sites').select('*');
     if (error) throw error;
-    res.json(data.map(mapDbSiteToFrontend)); // Applica la mappatura
+    console.log('Supabase raw data (before mapping):', JSON.stringify(data, null, 2)); // LOG AGGIUNTO
+    const mappedData = data.map(mapDbSiteToFrontend); // Store mapped data
+    console.log('Mapped data for frontend (after mapping):', JSON.stringify(mappedData, null, 2)); // LOG AGGIUNTO
+    res.json(mappedData); // Applica la mappatura
   } catch (error: any) {
     console.error(error);
     res.status(500).json({ error: error.message || 'Impossibile ottenere siti' });
