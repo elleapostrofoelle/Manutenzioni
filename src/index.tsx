@@ -1621,6 +1621,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
 
   const handleLogout = async () => {
     console.log('Attempting to log out...');
+    console.log('Current session in MainAppContent before signOut:', session); // Aggiunto questo log
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error during logout:', error);
@@ -1628,6 +1629,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
     } else {
       console.log('Logout successful. Session should be null now.');
       setError(null); // Clear any previous error
+      window.location.reload(); // Forza il ricaricamento della pagina
     }
   };
   
