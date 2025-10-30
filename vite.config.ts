@@ -20,13 +20,15 @@ export default defineConfig({
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-          // Se hai un pwa-64x64.png, puoi aggiungerlo
         ],
+        // Aggiungi queste opzioni per controllare il nome e il percorso del manifest
+        fileName: 'manifest.webmanifest', // Nome fisso del file manifest
+        base: '/', // Assicura che il percorso sia relativo alla root
       },
       workbox: {
         clientsClaim: true,
         skipWaiting: true,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest}'], // Aggiunto .webmanifest
       },
       devOptions: {
         enabled: true,
