@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import * as api from './api.ts';
-import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.ts';
-import { SupabaseProvider, useSupabase } from './components/SupabaseProvider';
-import AuthForm from './components/AuthForm';
-import './index.css'; // <-- QUESTA RIGA DEVE ESSERE QUI E ATTIVA
+import * as api from './api.ts'; // Modificato per usare il percorso relativo
+import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.ts'; // Modificato per usare il percorso relativo
+import { SupabaseProvider, useSupabase } from './components/SupabaseProvider.tsx';
+import AuthForm from './components/AuthForm.tsx';
 
 // Global type for BeforeInstallPromptEvent if not already in your environment (e.g., tsconfig lib)
 declare global {
