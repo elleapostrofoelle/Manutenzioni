@@ -1,12 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path';
-import { VitePWA } from 'vite-plugin-pwa'; // Importa VitePWA
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
     react(),
-    VitePWA({ // Riattivato il plugin PWA
+    VitePWA({
       registerType: 'autoUpdate',
       outDir: 'dist',
       manifest: {
@@ -21,14 +21,14 @@ export default defineConfig({
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
-        // Aggiungi queste opzioni per controllare il nome e il percorso del manifest
-        fileName: 'manifest.webmanifest', // Nome fisso del file manifest
-        base: '/', // Assicura che il percorso sia relativo alla root
+        fileName: 'manifest.webmanifest',
+        base: '/',
       },
       workbox: {
         clientsClaim: true,
         skipWaiting: true,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest}'], // Aggiunto .webmanifest
+        // Includiamo esplicitamente il manifest.webmanifest nella root
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}', 'manifest.webmanifest'],
       },
       devOptions: {
         enabled: true,
@@ -47,7 +47,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:5000' 
+      '/api': 'http://localhost:5000'
     }
   }
 })
