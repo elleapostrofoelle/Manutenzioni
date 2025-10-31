@@ -9,6 +9,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       outDir: 'dist',
+      filename: 'manifest.webmanifest', 
+      base: '/', 
       manifest: {
         name: 'Manutenzioni App',
         short_name: 'MaintApp',
@@ -21,14 +23,22 @@ export default defineConfig({
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
-        fileName: 'manifest.webmanifest',
-        base: '/',
       },
       workbox: {
         clientsClaim: true,
         skipWaiting: true,
-        // Includiamo esplicitamente il manifest.webmanifest nella root
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}', 'manifest.webmanifest'],
+        globPatterns: [
+            '**/*.{js,css,html,ico,png,svg,json}', 
+            'manifest.webmanifest',                
+            'pwa-*.png',                           
+            'sw.js' // <-- QUESTA RIGA DEVE ESSERE 'sw.js', È IL TUO SERVICE WORKER REALE.
+        ],
+        // globIgnores deve ignorare 'registerSW.js', non il manifest.
+        globIgnores: [
+            '**/node_modules/**/*',
+            'registerSW.js',       // <-- AGGIUNTO: Ignora registerSW.js
+            'workbox-*.js'         
+        ],
       },
       devOptions: {
         enabled: true,

@@ -1,0 +1,185 @@
+/* src/styles/LoginPage.css */
+
+/* Stile per il container principale della pagina */
+.login-page-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh; /* Occupa tutta l'altezza della viewport */
+  background: var(--background-color); /* Sfondo generale dal tuo index.css */
+  font-family: var(--font-family); /* Font globale dal tuo index.css */
+  color: var(--text-color); /* Colore testo globale dal tuo index.css */
+  padding: 20px; /* Padding per piccoli schermi */
+  box-sizing: border-box; /* Include padding e bordo nella larghezza/altezza totale */
+}
+
+/* Stile per la "card" del form di login */
+.login-card {
+  background: var(--card-bg); /* Sfondo card dal tuo index.css */
+  padding: 40px;
+  border-radius: var(--border-radius); /* Bordi arrotondati dal tuo index.css */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); /* Ombra leggera e moderna */
+  width: 100%;
+  max-width: 420px; /* Larghezza massima del form */
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Logo (se presente - decommenta e personalizza il percorso) */
+/*
+.login-logo {
+  max-width: 120px;
+  height: auto;
+  margin-bottom: 30px;
+}
+*/
+
+/* === AGGIUNTA QUI: Stile per il nome dell'applicazione === */
+.app-name {
+  font-size: 2.5em; /* Grande e in evidenza */
+  font-weight: 800; /* Molto spesso */
+  color: var(--primary-color); /* Usa il colore primario dell'app */
+  margin-bottom: 20px; /* Spazio sotto il nome dell'app */
+  letter-spacing: -0.05em; /* Leggera spaziatura tra le lettere */
+}
+/* ======================================================== */
+
+/* Titolo "Accedi" */
+.login-title {
+  font-size: 2.2em;
+  font-weight: 700;
+  margin-bottom: 35px; /* Spazio sotto il titolo "Accedi" */
+  color: var(--secondary-color); /* Colore secondario dal tuo index.css */
+}
+
+/* Gruppi di form (label + input) */
+.login-form .form-group {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.login-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-color); /* Colore testo globale */
+  font-size: 0.95em;
+}
+
+/* Campi di input */
+.login-form input[type="email"],
+.login-form input[type="password"] {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color); /* Bordo input dal tuo index.css */
+  border-radius: var(--border-radius); /* Bordi arrotondati dal tuo index.css */
+  font-size: 1em;
+  color: var(--text-color);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-form input[type="email"]:focus,
+.login-form input[type="password"]:focus {
+  border-color: var(--primary-color); /* Bordo focus dal tuo index.css */
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25); /* Ombra focus basata sul --primary-color */
+  outline: none;
+}
+
+/* Bottone di login */
+.login-button {
+  width: 100%;
+  padding: 14px;
+  background-color: var(--primary-color); /* Colore primario dal tuo index.css */
+  color: var(--secondary-color); /* Colore testo del bottone con contrasto elevato */
+  border: none;
+  border-radius: var(--border-radius); /* Bordi arrotondati dal tuo index.css */
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  margin-top: 25px;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2); /* Ombra bottone basata sul --primary-color */
+}
+
+.login-button:hover {
+  background-color: var(--primary-hover); /* Colore hover dal tuo index.css */
+  box-shadow: 0 6px 15px rgba(79, 70, 229, 0.3); /* Ombra hover basata sul --primary-color */
+}
+
+.login-button:active {
+  background-color: var(--primary-color); /* Mantiene primary color al click */
+}
+
+/* Testo di registrazione */
+.register-text {
+  margin-top: 30px;
+  font-size: 0.9em;
+  color: var(--text-light); /* Colore testo light dal tuo index.css */
+}
+
+.register-link-button {
+  background: none;
+  border: none;
+  color: var(--primary-color); /* Colore primario dal tuo index.css */
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0;
+  margin-left: 5px;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.register-link-button:hover {
+  color: var(--primary-hover); /* Colore hover dal tuo index.css */
+  text-decoration: underline;
+}
+
+/* Media Queries per la responsività */
+@media (max-width: 600px) {
+  .login-card {
+    padding: 25px;
+    margin: 0 15px;
+  }
+  .login-title {
+    font-size: 1.8em;
+  }
+  .login-button {
+    font-size: 1em;
+    padding: 12px;
+  }
+}
+/* Stili per i messaggi di feedback (errore/successo) */
+.login-message {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: var(--border-radius);
+  font-size: 0.9em;
+  font-weight: 500;
+  text-align: center;
+}
+
+.login-message.error {
+  background-color: #fee2e2; /* Red leggero */
+  color: #b91c1c; /* Rosso scuro */
+  border: 1px solid #fecaca;
+}
+
+.login-message.success {
+  background-color: #d1fae5; /* Green leggero */
+  color: #065f46; /* Verde scuro */
+  border: 1px solid #a7f3d0;
+}
+
+/* Stile per i bottoni disabilitati */
+.login-button:disabled,
+.register-link-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.login-button:disabled:hover {
+  background-color: var(--primary-color); /* Mantiene il colore primario anche in hover se disabilitato */
+}

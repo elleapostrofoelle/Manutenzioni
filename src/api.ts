@@ -61,13 +61,23 @@ console.log('API_BASE_URL in src/api.ts:', API_BASE_URL); // Aggiunto per debug
 
 // --- UTILITY FUNCTIONS ---
 const handleResponse = async (response: Response) => {
+  const responseText = await response.text(); // Leggi il corpo una sola volta come testo
+  
   if (!response.ok) {
-    const errorBody = await response.text(); // Leggi il corpo della risposta per più dettagli
-    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorBody}`);
+    // Se la risposta non è OK (es. 404, 500), lancia l'errore con il corpo testuale
+    throw new Error(`API Error: ${response.status} ${response.statusText} - ${responseText}`);
   }
-  return response.json();
+  
+  try {
+    // Tenta di analizzare il corpo come JSON
+    return JSON.parse(responseText);
+  } catch (e) {
+    // Se il parsing fallisce, significa che il server ha restituito un 200 OK ma con un corpo non-JSON.
+    console.error('JSON Parsing Error: Server returned non-JSON content for a successful request.');
+    console.error('Non-JSON Response Body:', responseText);
+    throw new Error(`JSON Parsing Error: Server returned non-JSON content. Body starts with: "${responseText.substring(0, 50)}..."`);
+  }
 };
-
 // Funzione helper per aggiungere l'header di autorizzazione
 const getAuthHeaders = (accessToken?: string) => {
   const headers: HeadersInit = {

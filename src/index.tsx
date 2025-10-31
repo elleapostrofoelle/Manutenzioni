@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import * as api from './api.ts';
 import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.ts';
 import { SupabaseProvider, useSupabase } from './components/SupabaseProvider';
-import AuthForm from './components/AuthForm';
-import './index.css'; // <-- QUESTA RIGA DEVE ESSERE QUI E ATTIVA
+// NON importiamo più AuthForm, lo sostituiamo con LoginPage per lo stile
+// import AuthForm from './components/AuthForm'; 
+import LoginPage from './pages/LoginPage'; // <--- IMPORTIAMO IL NOSTRO COMPONENTE LoginPage
+import './styles/index.css'; // <-- QUESTA RIGA DEVE ESSERE QUI E ATTIVA
 
 // Global type for BeforeInstallPromptEvent if not already in your environment (e.g., tsconfig lib)
 declare global {
@@ -21,7 +23,7 @@ declare global {
   }
 }
 
-// --- COMPONENTI UI ---
+// --- COMPONENTI UI (Tutti i componenti che avevi nel tuo index.tsx originale) ---
 
 interface NotificationBellProps {
   notifications: INotification[];
@@ -38,7 +40,7 @@ const NotificationBell = ({ notifications, onNotificationClick, onMarkAllAsRead,
   return (
     <div className="notification-bell-wrapper">
       <button className="notification-bell" onClick={() => setIsOpen(!isOpen)} aria-label={`Notifiche: ${unreadCount} non lette`}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 0 0 1-3.46 0"></path></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
         {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
       </button>
       {isOpen && (
@@ -332,11 +334,11 @@ const SiteForm = ({ onSaveSite, onClose, siteToEdit }: SiteFormProps) => {
                     <input id="manager-name" type="text" placeholder="Nome" value={manager.name} onChange={e => setManager(m => ({...m, name: e.target.value}))} />
                 </div>
                 <div className="form-group">
-                     <label htmlFor="manager-phone" className="sr-only">Telefono</label> {/* Utilizzo di sr-only per accessibilità */}
+                     <label htmlFor="manager-phone" className="sr-only">Telefono</label> 
                     <input id="manager-phone" type="text" placeholder="Telefono" value={manager.phone} onChange={e => setManager(m => ({...m, phone: e.target.value}))} />
                 </div>
                  <div className="form-group">
-                     <label htmlFor="manager-email" className="sr-only">Email</label> {/* Utilizzo di sr-only per accessibilità */}
+                     <label htmlFor="manager-email" className="sr-only">Email</label> 
                     <input id="manager-email" type="email" placeholder="Email" value={manager.email} onChange={e => setManager(m => ({...m, email: e.target.value}))} />
                 </div>
             </div>
@@ -347,11 +349,11 @@ const SiteForm = ({ onSaveSite, onClose, siteToEdit }: SiteFormProps) => {
                     <input id="contact-name" type="text" placeholder="Nome" value={contactPerson.name} onChange={e => setContactPerson(c => ({...c, name: e.target.value}))} />
                 </div>
                 <div className="form-group">
-                     <label htmlFor="contact-phone" className="sr-only">Telefono</label> {/* Utilizzo di sr-only per accessibilità */}
+                     <label htmlFor="contact-phone" className="sr-only">Telefono</label> 
                     <input id="contact-phone" type="text" placeholder="Telefono" value={contactPerson.phone} onChange={e => setContactPerson(c => ({...c, phone: e.target.value}))} />
                 </div>
                  <div className="form-group">
-                     <label htmlFor="contact-email" className="sr-only">Email</label> {/* Utilizzo di sr-only per accessibilità */}
+                     <label htmlFor="contact-email" className="sr-only">Email</label> 
                     <input id="contact-email" type="email" placeholder="Email" value={contactPerson.email} onChange={e => setContactPerson(c => ({...c, email: e.target.value}))} />
                 </div>
             </div>
@@ -737,7 +739,6 @@ interface ODLViewProps {
 
 const ODLView = ({ tasks, sites, onAddODLClick, onTaskClick }: ODLViewProps) => {
     const odls = tasks.filter((task: ITask) => task.type === 'odl').sort((a: ITask, b: ITask) => {
-        // Usa le stringhe direttamente per il confronto o converti in Date
         const dateB = new Date(b.startDate || b.dueDate);
         const dateA = new Date(a.startDate || a.dueDate);
         return dateB.getTime() - dateA.getTime();
@@ -918,13 +919,12 @@ const Schedule = ({ tasks, sites, users, resourceFilter, onResourceFilterChange,
   }, [currentDate]);
 
   const startDayOfWeek = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
-  // Adjust to make Monday the first day (0=Mon, 6=Sun)
   const startingDay = (startDayOfWeek === 0) ? 6 : startDayOfWeek - 1;
 
 
   const tasksByDate = useMemo(() => {
     return tasks.reduce((acc: Record<string, ITask[]>, task: ITask) => {
-      const dateKey = new Date(task.dueDate).toDateString(); // Converti stringa in Date per la chiave
+      const dateKey = new Date(task.dueDate).toDateString(); 
       if (!acc[dateKey]) acc[dateKey] = [];
       acc[dateKey].push(task);
       return acc;
@@ -1001,7 +1001,7 @@ interface MatrixViewProps {
 
 const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChange, onTaskClick, onAddTaskClick }: MatrixViewProps) => {
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [viewMode, setViewMode] = useState<'month' | 'week'>('month'); // Nuovo stato per la modalità di visualizzazione
+    const [viewMode, setViewMode] = useState<'month' | 'week'>('month'); 
 
     const daysInView = useMemo(() => {
         const days: Date[] = [];
@@ -1011,9 +1011,8 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
                 days.push(new Date(date));
                 date.setDate(date.getDate() + 1);
             }
-        } else { // 'week' view
+        } else { 
             const startOfWeek = new Date(currentDate);
-            // Imposta la data al lunedì della settimana corrente
             startOfWeek.setDate(currentDate.getDate() - (currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1)); 
             startOfWeek.setHours(0, 0, 0, 0);
 
@@ -1057,7 +1056,7 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
             const newDate = new Date(prev);
             if (viewMode === 'month') {
                 newDate.setMonth(prev.getMonth() + offset);
-            } else { // 'week' view
+            } else { 
                 newDate.setDate(prev.getDate() + (offset * 7));
             }
             return newDate;
@@ -1068,7 +1067,7 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
         <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
             <div className="header"><h1>Vista a Matrice</h1></div>
             <div className="schedule-controls">
-                <div className="view-mode-selector"> {/* Nuovi pulsanti per la selezione della modalità */}
+                <div className="view-mode-selector"> 
                     <button 
                         className={`filter-btn ${viewMode === 'month' ? 'active' : ''}`} 
                         onClick={() => setViewMode('month')}
@@ -1121,7 +1120,7 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
                             {daysInView.map((day: Date) => {
                                 const dateKey = day.toDateString();
                                 const cellTasks = tasksBySiteAndDate[site.id]?.[dateKey] || [];
-                                const isWeekend = day.getDay() === 0 || day.getDay() === 6; // Sunday (0) or Saturday (6)
+                                const isWeekend = day.getDay() === 0 || day.getDay() === 6; 
                                 return (
                                     <div key={`${site.id}-${dateKey}`} className={`matrix-cell ${isWeekend ? 'weekend' : ''}`}>
                                         <span className="matrix-cell-day-number">{day.getDate()}</span> 
@@ -1131,7 +1130,7 @@ const MatrixView = ({ tasks, sites, users, resourceFilter, onResourceFilterChang
                                                 key={task.id}
                                                 className={`task-item ${task.status}`}
                                                 onClick={() => onTaskClick(task)}
-                                                title={`${task.description} - ${task.assignees.join(', ')}`}
+                                                title={`${task.description} - ${task.assignees.join(', ',)})`}
                                             >
                                                 <span className="task-item-desc">{task.type === 'odl' && `[ODL] `}{task.description}</span>
                                                 <span className="task-item-assignee">{task.assignees.join(', ')}</span>
@@ -1306,7 +1305,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
   const [error, setError] = useState<string | null>(null);
 
   const [modalConfig, setModalConfig] = useState<{ type: string | null; data?: any }>({ type: null });
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null); // Tipizzato correttamente
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null); 
   
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(() => {
     try {
@@ -1328,17 +1327,16 @@ const MainAppContent = () => { // Renamed App to MainAppContent
         }
     }, [readNotificationIds]);
     
-    // Initial data fetch
     useEffect(() => {
         const loadData = async () => {
             try {
                 setIsLoading(true);
-                const accessToken = session?.access_token; // Ottieni il token di accesso
+                const accessToken = session?.access_token; 
                 const [sitesData, usersData, tasksData, maintenanceData] = await Promise.all([
                     api.getSites(accessToken),
                     api.getUsers(accessToken),
                     api.getTasks(accessToken),
-                    api.getMaintenanceActivities() // Questa non richiede autenticazione
+                    api.getMaintenanceActivities() 
                 ]);
                 setSites(sitesData);
                 setUsers(usersData);
@@ -1351,31 +1349,31 @@ const MainAppContent = () => { // Renamed App to MainAppContent
                 setIsLoading(false);
             }
         };
-        if (session) { // Carica i dati solo se c'è una sessione attiva
+        if (session) { 
             loadData();
         } else {
-            setIsLoading(false); // Se non c'è sessione, non caricare e non mostrare spinner indefinitamente
+            setIsLoading(false); 
             setSites([]);
             setUsers([]);
             setTasks([]);
             setNotifications([]);
         }
-    }, [session]); // Dipende dalla sessione
+    }, [session]); 
     
     useEffect(() => {
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const imminentEnd = new Date(todayStart);
-        imminentEnd.setDate(imminentEnd.getDate() + 3); // Due in the next 2 days (today, tomorrow, day after)
+        imminentEnd.setDate(imminentEnd.getDate() + 3); 
 
         const generated: INotification[] = [];
 
         tasks.forEach((task: ITask) => {
             if (task.status !== 'completed') {
-                const dueDate = new Date(task.dueDate); // Converti la stringa in Date per il confronto
+                const dueDate = new Date(task.dueDate); 
                 const notificationId = `notif-${task.id}`;
 
-                if (dueDate < todayStart) { // Overdue
+                if (dueDate < todayStart) { 
                     generated.push({
                         id: notificationId,
                         taskId: task.id,
@@ -1384,7 +1382,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
                         task,
                         read: readNotificationIds.has(notificationId),
                     });
-                } else if (dueDate >= todayStart && dueDate < imminentEnd) { // Imminent
+                } else if (dueDate >= todayStart && dueDate < imminentEnd) { 
                     const daysDiff = Math.ceil((dueDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
                     let imminentMsg = 'domani';
                     if (daysDiff === 0) imminentMsg = 'oggi';
@@ -1403,26 +1401,16 @@ const MainAppContent = () => { // Renamed App to MainAppContent
         
         const finalNotifications = generated.sort((a: INotification, b: INotification) => {
             if (a.read !== b.read) {
-                return a.read ? 1 : -1; // Unread notifications first
+                return a.read ? 1 : -1; 
             }
-            return new Date(a.task.dueDate).getTime() - new Date(b.task.dueDate).getTime(); // Then sort by due date
+            return new Date(a.task.dueDate).getTime() - new Date(b.task.dueDate).getTime(); 
         });
         
         setNotifications(finalNotifications);
     }, [tasks, readNotificationIds]);
     
     useEffect(() => {
-        // if ('serviceWorker' in navigator) {
-        //     window.addEventListener('load', () => {
-        //         navigator.serviceWorker.register('/sw.js').then(registration => {
-        //             console.log('SW registered: ', registration);
-        //         }).catch(registrationError => {
-        //             console.log('SW registration failed: ', registrationError);
-        //         });
-        //     });
-        // }
-
-        const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => { // Tipizzato correttamente
+        const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => { 
             e.preventDefault();
             setInstallPrompt(e);
         };
@@ -1455,7 +1443,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
 
   const closeModal = () => setModalConfig({ type: null });
   
-  const handleAddTask = async (taskData: Omit<ITask, 'id'>) => { // taskData ha già dueDate e startDate come stringhe
+  const handleAddTask = async (taskData: Omit<ITask, 'id'>) => { 
         try {
             const { startDate, dueDate, assignees } = taskData;
             const newTaskInterval = {
@@ -1471,9 +1459,9 @@ const MainAppContent = () => { // Renamed App to MainAppContent
                 const proceed = window.confirm(`Attenzione: Le seguenti risorse hanno già impegni concomitanti:\n\n- ${conflictingAssignees.join('\n- ')}\n\nVuoi procedere comunque?`);
                 if (!proceed) return;
             }
-            const savedTask = await api.addTask(taskData, session?.access_token); // Passa il token
+            const savedTask = await api.addTask(taskData, session?.access_token); 
             setTasks(prevTasks => [...prevTasks, savedTask].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
-            setError(null); // Clear any previous error
+            setError(null); 
         } catch (err: any) {
             setError(`Errore nell'aggiunta dell'attività: ${err.message}`);
             console.error("Error adding task:", err);
@@ -1482,14 +1470,14 @@ const MainAppContent = () => { // Renamed App to MainAppContent
   
   const handleSaveSite = async (site: ISite) => {
     try {
-        const savedSite = await api.saveSite(site, session?.access_token); // Passa il token
+        const savedSite = await api.saveSite(site, session?.access_token); 
         const siteExists = sites.some((s: ISite) => s.id === savedSite.id);
         if (siteExists) {
             setSites(sites.map((s: ISite) => s.id === savedSite.id ? savedSite : s));
         } else {
             setSites(prevSites => [...prevSites, savedSite]);
         }
-        setError(null); // Clear any previous error
+        setError(null); 
     } catch (err: any) {
         setError(`Errore nel salvataggio del sito: ${err.message}`);
         console.error("Error saving site:", err);
@@ -1498,14 +1486,14 @@ const MainAppContent = () => { // Renamed App to MainAppContent
 
   const handleSaveUser = async (user: IUser) => {
     try {
-        const savedUser = await api.saveUser(user, session?.access_token); // Passa il token
+        const savedUser = await api.saveUser(user, session?.access_token); 
         const userExists = users.some((u: IUser) => u.id === savedUser.id);
         if (userExists) {
         setUsers(users.map((u: IUser) => u.id === savedUser.id ? savedUser : u));
         } else {
         setUsers(prevUsers => [...prevUsers, savedUser]);
         }
-        setError(null); // Clear any previous error
+        setError(null); 
     } catch (err: any) {
         setError(`Errore nel salvataggio dell'utente: ${err.message}`);
         console.error("Error saving user:", err);
@@ -1517,7 +1505,6 @@ const MainAppContent = () => { // Renamed App to MainAppContent
         const originalTask = tasks.find((t: ITask) => t.id === taskId);
         if (!originalTask) return;
 
-        // Crea un oggetto task aggiornato per il controllo dei conflitti
         const updatedTaskData = { ...originalTask, ...updates } as ITask;
         const { startDate, dueDate, assignees } = updatedTaskData;
         const updatedTaskInterval = {
@@ -1534,9 +1521,9 @@ const MainAppContent = () => { // Renamed App to MainAppContent
             if (!proceed) return;
         }
         
-        const updatedTask = await api.updateTask(taskId, updates, session?.access_token); // Passa il token
+        const updatedTask = await api.updateTask(taskId, updates, session?.access_token); 
         setTasks(tasks.map((t: ITask) => t.id === taskId ? updatedTask : t));
-        setError(null); // Clear any previous error
+        setError(null); 
     } catch (err: any) {
         setError(`Errore nell'aggiornamento dell'attività: ${err.message}`);
         console.error("Error updating task:", err);
@@ -1545,9 +1532,9 @@ const MainAppContent = () => { // Renamed App to MainAppContent
 
   const handleDeleteTask = async (taskId: string) => {
       try {
-          await api.deleteTask(taskId, session?.access_token); // Passa il token
+          await api.deleteTask(taskId, session?.access_token); 
           setTasks(tasks.filter((t: ITask) => t.id !== taskId));
-          setError(null); // Clear any previous error
+          setError(null); 
       } catch (err: any) {
           setError(`Errore nell'eliminazione dell'attività: ${err.message}`);
           console.error("Error deleting task:", err);
@@ -1622,15 +1609,15 @@ const MainAppContent = () => { // Renamed App to MainAppContent
 
   const handleLogout = async () => {
     console.log('Attempting to log out...');
-    console.log('Current session in MainAppContent before signOut:', session); // Aggiunto questo log
+    console.log('Current session in MainAppContent before signOut:', session); 
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error during logout:', error);
       setError(`Errore durante il logout: ${error.message}`);
     } else {
       console.log('Logout successful. Session should be null now.');
-      setError(null); // Clear any previous error
-      window.location.reload(); // Forza il ricaricamento della pagina
+      setError(null); 
+      window.location.reload(); 
     }
   };
   
@@ -1653,7 +1640,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
                 maintenanceActivities={maintenanceActivities} 
                 onAddTask={handleAddTask} 
                 onClose={closeModal} 
-                selectedDate={modalConfig.data.selectedDate} // selectedDate è un oggetto Date qui
+                selectedDate={modalConfig.data.selectedDate} 
                 selectedSiteId={modalConfig.data.selectedSiteId}
             />;
         
@@ -1803,12 +1790,13 @@ const MainAppContent = () => { // Renamed App to MainAppContent
   );
 };
 
+// Questo è il componente App che decide cosa mostrare (login o app principale)
 const App = () => {
   const { session } = useSupabase();
 
   return (
-    <div className="flex-1"> {/* Usa flex-1 per espandersi all'interno del SupabaseProvider */}
-      {session ? <MainAppContent /> : <AuthForm />}
+    <div className="flex-1">
+      {session ? <MainAppContent /> : <LoginPage />} {/* <--- QUI È LA MODIFICA! */}
     </div>
   );
 };

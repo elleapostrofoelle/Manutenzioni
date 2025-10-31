@@ -1,3 +1,4 @@
+// src/server.ts
 import dotenv from 'dotenv'; // Importa dotenv
 dotenv.config(); // Carica le variabili d'ambiente all'inizio
 
@@ -40,6 +41,11 @@ if (fs.existsSync(indexPath)) {
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// === AGGIUNTA PER DEBUG DELLE VARIABILI D'AMBIENTE ===
+console.log('DEBUG: SUPABASE_URL (from process.env):', supabaseUrl ? 'present' : 'NOT SET');
+console.log('DEBUG: SUPABASE_SERVICE_ROLE_KEY (from process.env):', supabaseKey ? 'present' : 'NOT SET');
+// ===================================================
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('Variabili d\'ambiente SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY non impostate.');
