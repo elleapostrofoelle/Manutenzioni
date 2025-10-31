@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">manutenzioni1</string>
+    <string name="title_activity_main">manutenzioni1</string>
+    <string name="package_name">com.example.manutenzioni1</string>
+    <string name="custom_url_scheme">com.example.manutenzioni1</string>
+</resources>
