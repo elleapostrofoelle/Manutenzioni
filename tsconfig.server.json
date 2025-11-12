@@ -1,32 +1,17 @@
 {
+  "extends": "./tsconfig.json", // Eredita dalla configurazione base
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "outDir": "./dist/backend",
-    "rootDir": "./",
-    "strict": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-    "sourceMap": true,
-    "types": ["node"]
+    "outDir": "./dist/backend", // Specifica dove va il JS compilato
+    "module": "NodeNext",       // Usa la strategia di moduli moderna per Node
+    "moduleResolution": "NodeNext", // Usa la risoluzione dei moduli moderna
+    "sourceMap": false,
+    "noImplicitAny": false // Mettiamo false per ora per ridurre gli errori
   },
   "include": [
-    "server.ts",
-    "api.ts"
+    "server.ts" // Specifica ESATTAMENTE quale file compilare
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "iisnode",
-    "src",
-    "vite.config.ts",
-    "sw.js",
-    "tsconfig.json",
-    "tsconfig.ts-node.json"
+    "dist"
   ]
 }

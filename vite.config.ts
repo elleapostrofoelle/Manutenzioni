@@ -2,16 +2,16 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path';
 import { VitePWA } from 'vite-plugin-pwa';
-import dyadComponentTagger from '@dyad-sh/react-vite-component-tagger';
 
 export default defineConfig({
-  plugins: [dyadComponentTagger(), 
+
+  plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       outDir: 'dist',
-      filename: 'manifest.webmanifest', 
-      base: '/', 
+      // filename: 'manifest.webmanifest', 
+      // Rimuovere base qui, è già nel defineConfig
       manifest: {
         name: 'Manutenzioni App',
         short_name: 'MaintApp',
@@ -32,12 +32,11 @@ export default defineConfig({
             '**/*.{js,css,html,ico,png,svg,json}', 
             'manifest.webmanifest',                
             'pwa-*.png',                           
-            'sw.js' // <-- QUESTA RIGA DEVE ESSERE 'sw.js', È IL TUO SERVICE WORKER REALE.
+            'sw.js' 
         ],
-        // globIgnores deve ignorare 'registerSW.js', non il manifest.
         globIgnores: [
             '**/node_modules/**/*',
-            'registerSW.js',       // <-- AGGIUNTO: Ignora registerSW.js
+            'registerSW.js',       
             'workbox-*.js'         
         ],
       },

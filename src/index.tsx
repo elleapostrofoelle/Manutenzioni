@@ -1,7 +1,9 @@
+// --- INIZIO FILE index.tsx ---
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as api from './api.ts';
-import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact } from './api.ts';
+import type { ITask, ISite, IUser, INotification, TaskStatus, IPersonContact, IOtherContact, IRole } from './api.ts';
 import { SupabaseProvider, useSupabase } from './components/SupabaseProvider';
 // NON importiamo più AuthForm, lo sostituiamo con LoginPage per lo stile
 // import AuthForm from './components/AuthForm'; 
@@ -31,7 +33,13 @@ interface NotificationBellProps {
   onMarkAllAsRead: () => void;
   sites: ISite[];
 }
-
+interface UserFormProps {
+  onSaveUser: (user: IUser) => Promise<void>;
+  onClose: () => void;
+  userToEdit: IUser | null;
+  roles: IRole[];
+  onDeleteUser: (userId: string) => Promise<void>; // <--- AGGIUNTA QUESTA LINEA
+}
 const NotificationBell = ({ notifications, onNotificationClick, onMarkAllAsRead, sites }: NotificationBellProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const unreadCount = notifications.filter((n: INotification) => !n.read).length;
@@ -386,9 +394,11 @@ interface UserFormProps {
   onSaveUser: (user: IUser) => Promise<void>;
   onClose: () => void;
   userToEdit: IUser | null;
+  roles: IRole[];
+  onDeleteUser: (userId: string) => Promise<void>; // <--- AGGIUNGI QUESTA LINEA
 }
 
-const UserForm = ({ onSaveUser, onClose, userToEdit }: UserFormProps) => {
+const UserForm = ({ onSaveUser, onClose, userToEdit, roles, onDeleteUser  }: UserFormProps): React.JSX.Element | null => { // <--- CORREZIONE DEL TIPO DI RITORNO
   const isEditing = !!userToEdit;
   const [name, setName] = useState(userToEdit?.name || '');
   const [role, setRole] = useState(userToEdit?.role || '');
@@ -401,9 +411,16 @@ const UserForm = ({ onSaveUser, onClose, userToEdit }: UserFormProps) => {
       role 
     });
     onClose();
-  };
+  }; // <--- Punto Critico: chiude handleSubmit
+
+  const handleDelete = async () => { // <--- Inizia la funzione handleDelete
+    if (userToEdit && window.confirm(`Sei sicuro di voler eliminare la risorsa "${userToEdit.name}"?`)) {
+        await onDeleteUser(userToEdit.id);
+        onClose();  
+    }
+ }; // <--- Chiude la funzione handleDelete
   
-  return (
+  return ( // <--- QUESTA RIGA DEVE ESSERCI
     <form onSubmit={handleSubmit}>
       <div className="modal-header">
         <h2>{isEditing ? 'Modifica Risorsa' : 'Nuova Risorsa'}</h2>
@@ -413,17 +430,34 @@ const UserForm = ({ onSaveUser, onClose, userToEdit }: UserFormProps) => {
         <label htmlFor="name">Nome e Cognome</label>
         <input id="name" type="text" value={name} onChange={e => setName(e.target.value)} required />
       </div>
-      <div className="form-group">
-        <label htmlFor="role">Mansione</label>
-        <input id="role" type="text" value={role} onChange={e => setRole(e.target.value)} required />
-      </div>
-      <div className="modal-actions">
-        <button type="submit" className="btn btn-primary">{isEditing ? 'Salva Modifiche' : 'Aggiungi Risorsa'}</button>
+<div className="form-group">
+  <label htmlFor="role">Mansione</label>
+  <input
+    id="role"
+    type="text"
+    value={role}
+    onChange={e => setRole(e.target.value)}
+    required
+    list="roles-list"
+    placeholder="Seleziona o scrivi una mansione..."
+  />
+  <datalist id="roles-list">
+    {roles.map(r => <option key={r.id} value={r.name} />)}
+  </datalist>
+</div>
+      <div className="modal-actions space-between"> {/* <--- MODIFICA LA CLASSE A space-between */}
+        {isEditing && ( // Mostra il pulsante Elimina solo se siamo in modalità modifica
+            <button type="button" onClick={handleDelete} className="btn btn-danger">
+                Elimina
+            </button>
+        )}
+        <div>
+            <button type="submit" className="btn btn-primary">{isEditing ? 'Salva Modifiche' : 'Aggiungi Risorsa'}</button>
+        </div>
       </div>
     </form>
-  );
-};
-
+  ); // <--- CHIUDE IL RETURN
+}; // <--- CHIUDE IL COMPONENTE
 interface TaskDetailsFormProps {
   task: ITask;
   sites: ISite[];
@@ -1246,6 +1280,85 @@ const GanttView = ({ tasks, sites, onTaskClick }: GanttViewProps) => {
     );
 };
 
+interface SettingsProps {
+  accessToken: string | undefined;
+}
+
+const Settings = ({ accessToken }: SettingsProps) => {
+    const [roles, setRoles] = useState<IRole[]>([]);
+    const [newRoleName, setNewRoleName] = useState('');
+    const [editingRole, setEditingRole] = useState<IRole | null>(null);
+
+    useEffect(() => {
+        api.getRoles(accessToken!).then(setRoles);
+    }, [accessToken]);
+
+    const handleAddRole = async () => {
+        if (!newRoleName.trim()) return;
+        const newRole = await api.addRole({ name: newRoleName }, accessToken!);
+        setRoles([...roles, newRole]);
+        setNewRoleName('');
+    };
+
+    const handleUpdateRole = async () => {
+        if (!editingRole || !editingRole.name.trim()) return;
+        const updatedRole = await api.updateRole(editingRole.id, { name: editingRole.name }, accessToken!);
+        setRoles(roles.map(r => r.id === updatedRole.id ? updatedRole : r));
+        setEditingRole(null);
+    };
+
+    const handleDeleteRole = async (roleId: string) => {
+        if (window.confirm("Sei sicuro di voler eliminare questa mansione?")) {
+            await api.deleteRole(roleId, accessToken!);
+            setRoles(roles.filter(r => r.id !== roleId));
+        }
+    };
+    return (
+        <div>
+            <div className="header"><h1>Impostazioni</h1></div>
+            <div className="settings-section">
+                <h2>Gestione Mansioni</h2>
+                <div className="role-list">
+                    {roles.map(role => (
+                        <div key={role.id} className="role-item">
+                            {editingRole?.id === role.id ? (
+                                <input 
+                                    type="text" 
+                                    value={editingRole.name}
+                                    onChange={(e) => setEditingRole({ ...editingRole, name: e.target.value })}
+                                />
+                            ) : (
+                                <span>{role.name}</span>
+                            )}
+                            <div className="role-actions">
+                                {editingRole?.id === role.id ? (
+                                    <>
+                                        <button onClick={handleUpdateRole}>Salva</button>
+                                        <button onClick={() => setEditingRole(null)}>Annulla</button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => setEditingRole(role)}>Modifica</button>
+                                        <button onClick={() => handleDeleteRole(role.id)}>Elimina</button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="add-role-form">
+                    <input 
+                        type="text"
+                        placeholder="Nuova mansione..."
+                        value={newRoleName}
+                        onChange={(e) => setNewRoleName(e.target.value)}
+                    />
+                    <button onClick={handleAddRole}>Aggiungi Mansione</button>
+                </div>
+            </div>
+        </div>
+    );
+};    
 
 
 // --- HELPERS ---
@@ -1300,13 +1413,10 @@ const MainAppContent = () => { // Renamed App to MainAppContent
   const [notifications, setNotifications] = useState<INotification[]>([]);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [resourceFilter, setResourceFilter] = useState<string>('');
-  
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [modalConfig, setModalConfig] = useState<{ type: string | null; data?: any }>({ type: null });
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null); 
-  
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(() => {
     try {
         const item = window.localStorage.getItem('readNotificationIds');
@@ -1316,6 +1426,8 @@ const MainAppContent = () => { // Renamed App to MainAppContent
         return new Set();
     }
   });
+
+  const [roles, setRoles] = useState<IRole[]>([]);
 
   const selectedSite = useMemo(() => sites.find((s: ISite) => s.id === selectedSiteId), [sites, selectedSiteId]);
 
@@ -1332,16 +1444,18 @@ const MainAppContent = () => { // Renamed App to MainAppContent
             try {
                 setIsLoading(true);
                 const accessToken = session?.access_token; 
-                const [sitesData, usersData, tasksData, maintenanceData] = await Promise.all([
+                const [sitesData, usersData, tasksData, maintenanceData, rolesData] = await Promise.all([
                     api.getSites(accessToken),
                     api.getUsers(accessToken),
                     api.getTasks(accessToken),
-                    api.getMaintenanceActivities() 
+                    api.getMaintenanceActivities(),
+                    api.getRoles(accessToken) 
                 ]);
                 setSites(sitesData);
                 setUsers(usersData);
                 setTasks(tasksData);
                 setMaintenanceActivities(maintenanceData);
+                setRoles(rolesData);
             } catch (err) {
                 setError('Impossibile caricare i dati. Riprova più tardi.');
                 console.error(err);
@@ -1432,6 +1546,11 @@ const MainAppContent = () => { // Renamed App to MainAppContent
         setView('sites');
       }
     }, [view, selectedSite]);
+    
+    useEffect(() => {
+    // Questa funzione viene chiamata ogni volta che l'utente cambia vista (es. da Dashboard a Siti)
+    closeModal(); // Chiude qualsiasi modulo pop-up sia aperto
+  }, [view]); // L'hook si attiva solo quando la variabile 'view' cambia
 
     const filteredTasks = useMemo(() => {
         if (!resourceFilter) {
@@ -1540,6 +1659,16 @@ const MainAppContent = () => { // Renamed App to MainAppContent
           console.error("Error deleting task:", err);
       }
   };
+  const handleDeleteUser = async (userId: string) => { // <--- NUOVA FUNZIONE
+    try {
+        await api.deleteUser(userId, session?.access_token); 
+        setUsers(users.filter((u: IUser) => u.id !== userId));
+        setError(null); 
+    } catch (err: any) {
+        setError(`Errore nell'eliminazione dell'utente: ${err.message}`);
+        console.error("Error deleting user:", err);
+    }
+};
 
   const handleAddTaskClick = (date: Date, siteId?: string) => {
     setModalConfig({ type: 'addTask', data: { selectedDate: date, selectedSiteId: siteId } });
@@ -1554,11 +1683,11 @@ const MainAppContent = () => { // Renamed App to MainAppContent
   };
 
   const handleAddUserClick = () => {
-     setModalConfig({ type: 'userForm', data: { userToEdit: null } });
+     setModalConfig({ type: 'userForm', data: { userToEdit: null, onDeleteUser: handleDeleteUser } });
   };
   
   const handleUserClick = (user: IUser) => {
-    setModalConfig({ type: 'userForm', data: { userToEdit: user } });
+    setModalConfig({ type: 'userForm', data: { userToEdit: user, onDeleteUser: handleDeleteUser } });
   }
   
   const handleAddODLClick = () => {
@@ -1660,10 +1789,13 @@ const MainAppContent = () => { // Renamed App to MainAppContent
             />;
 
         case 'userForm':
+           const onDeleteUserProp = modalConfig.data.onDeleteUser || handleDeleteUser;
             return <UserForm 
                 onSaveUser={handleSaveUser} 
                 onClose={closeModal} 
-                userToEdit={modalConfig.data.userToEdit} 
+                userToEdit={modalConfig.data.userToEdit}
+                roles={roles} 
+                onDeleteUser={onDeleteUserProp}
             />;
 
         case 'taskDetails': {
@@ -1723,6 +1855,7 @@ const MainAppContent = () => { // Renamed App to MainAppContent
 
   const renderView = () => {
     switch (view) {
+        
       case 'sites':
         return <SiteList sites={sites} onAddSiteClick={handleAddSiteClick} onSiteClick={handleSiteClick} />;
       case 'schedule':
@@ -1733,6 +1866,8 @@ const MainAppContent = () => { // Renamed App to MainAppContent
         return <GanttView tasks={filteredTasks} sites={sites} onTaskClick={handleTaskClick} />;
       case 'risorse':
         return <Resources users={users} onAddUserClick={handleAddUserClick} onUserClick={handleUserClick} />;
+      case 'settings':
+        return <Settings accessToken={session?.access_token} />;
       case 'odl':
         return <ODLView tasks={tasks} sites={sites} onAddODLClick={handleAddODLClick} onTaskClick={handleTaskClick} />;
       case 'site-detail':
@@ -1758,6 +1893,8 @@ const MainAppContent = () => { // Renamed App to MainAppContent
           <li><button className={view === 'gantt' ? 'active' : ''} onClick={() => navigate('gantt')}>Gantt</button></li>
           <li><button className={view === 'odl' ? 'active' : ''} onClick={() => navigate('odl')}>ODL</button></li>
           <li><button className={view === 'risorse' ? 'active' : ''} onClick={() => navigate('risorse')}>Risorse</button></li>
+          
+          <li><button className={view === 'settings' ? 'active' : ''} onClick={() => navigate('settings')}>Impostazioni</button></li>
         </ul>
         {installPrompt && (
             <div className="sidebar-footer">
@@ -1808,3 +1945,4 @@ root.render(
     <App />
   </SupabaseProvider>
 );
+// --- FINE FILE index.tsx ---

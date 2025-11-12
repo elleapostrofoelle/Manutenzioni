@@ -88,6 +88,8 @@ const LoginPage: React.FC = () => {
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
+              // CORREZIONE TS/React: usa autoComplete
+              autoComplete="username" 
             />
           </div>
 
@@ -100,6 +102,8 @@ const LoginPage: React.FC = () => {
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               required 
+              // CORREZIONE TS/React: usa autoComplete
+              autoComplete="current-password" 
             />
           </div>
 
