@@ -17,9 +17,9 @@ type Role = Database['public']['Tables']['roles']['Row'];
 type RoleInsert = Database['public']['Tables']['roles']['Insert'];
 type SiteInsert = Database['public']['Tables']['sites']['Insert'];
 type SiteUpdate = Database['public']['Tables']['sites']['Update'];
-// User è la Row type per la tabella users
 type UserRow = Database['public']['Tables']['users']['Row'];
 type UserInsert = Database['public']['Tables']['users']['Insert'];
+type TaskRow = Database['public']['Tables']['tasks']['Row'];
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
 type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 
@@ -135,10 +135,17 @@ app.put('/api/sites/:id', async (req, res) => {
     if (!data) return res.status(404).json({ error: 'Sito non trovato' });
     res.json(data);
 });
-// ... (rotte DELETE)
+// ROTTA AGGIUNTA: DELETE per Siti
+app.delete('/api/sites/:id', async (req, res) => {
+    const { error } = await supabase.from('sites').delete().eq('id', req.params.id).eq('user_id', req.user!.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(204).send();
+});
+
 
 // CRUD USERS
 app.get('/api/users', async (req, res) => {
+    // Rimosso il filtro eq('id', req.user!.id) per visualizzare tutte le risorse create
     const { data, error } = await supabase.from('users').select('*');
         
     if (error) {
@@ -167,15 +174,14 @@ app.put('/api/users/:id', async (req, res) => {
     if (name) updates.name = name;
     if (role) updates.role = role;
     
-    // Assumendo che l'utente corrente possa modificare solo le risorse a cui è associato
-    // Non ho il campo user_id per filtrare, quindi aggiorniamo solo per ID utente
+    // Aggiorniamo solo per ID utente
     const { data, error } = await supabase.from('users').update(updates).eq('id', req.params.id).select().single(); 
     if (error) return res.status(500).json({ error: error.message, details: error.details });
     if (!data) return res.status(404).json({ error: 'Utente non trovato' });
     res.json(data);
 });
 
-// NUOVA ROTTA: DELETE (Elimina utente)
+// ROTTE AGGIUNTE: DELETE (Elimina utente)
 app.delete('/api/users/:id', async (req, res) => {
     const { error } = await supabase.from('users').delete().eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
@@ -190,8 +196,78 @@ app.get('/api/roles', async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
-// ... (rotte POST, PUT, DELETE per i ruoli)
-// ... (rotte per i task)
+app.post('/api/roles', async (req, res) => {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'Il nome è obbligatorio' });
+
+    const roleToInsert: RoleInsert = {
+        name,
+        user_id: req.user!.id
+    };
+    const { data, error } = await supabase.from('roles').insert(roleToInsert).select().single();
+    if (error) return res.status(501).json({ error: error.message, details: "Controlla le policy RLS" });
+    res.status(201).json(data);
+});
+
+// CRUD TASKS
+app.get('/api/tasks', async (req, res) => {
+  const { data, error } = await supabase.from('tasks').select('*').eq('user_id', req.user!.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+// ROTTE AGGIUNTE: POST (Aggiungi task)
+app.post('/api/tasks', async (req, res) => {
+  const taskData: ITask = req.body;
+  
+  // Mappatura da camelCase a snake_case per il DB
+  const taskToInsert: TaskInsert = {
+    id: uuidv4(),
+    user_id: req.user!.id,
+    description: taskData.description,
+    status: taskData.status,
+    assignees: taskData.assignees,
+    type: taskData.type,
+    // Mappatura campi:
+    siteid: taskData.siteId,
+    duedate: taskData.dueDate,
+    odlnumber: taskData.odlNumber,
+    startdate: taskData.startDate,
+  };
+  
+  const { data, error } = await supabase.from('tasks').insert(taskToInsert).select().single();
+  if (error) return res.status(500).json({ error: error.message, details: error.details });
+  res.status(201).json(data);
+});
+
+// ROTTE AGGIUNTE: PUT (Aggiorna task)
+app.put('/api/tasks/:id', async (req, res) => {
+    const updates: Partial<ITask> = req.body;
+    
+    // Mappatura da camelCase a snake_case per l'update
+    const updatesToDB: Partial<TaskUpdate> = {
+        description: updates.description,
+        status: updates.status,
+        assignees: updates.assignees,
+        // Mappatura campi:
+        siteid: updates.siteId,
+        duedate: updates.dueDate,
+        odlnumber: updates.odlNumber,
+        startdate: updates.startDate,
+    };
+
+    // Filtra per ID e user_id (per sicurezza)
+    const { data, error } = await supabase.from('tasks').update(updatesToDB).eq('id', req.params.id).eq('user_id', req.user!.id).select().single();
+    if (error) return res.status(500).json({ error: error.message, details: error.details });
+    if (!data) return res.status(404).json({ error: 'Task non trovato' });
+    res.json(data);
+});
+
+// ROTTE AGGIUNTE: DELETE (Elimina task)
+app.delete('/api/tasks/:id', async (req, res) => {
+    const { error } = await supabase.from('tasks').delete().eq('id', req.params.id).eq('user_id', req.user!.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(204).send();
+});
 
 
 // --- GESTIONE FRONTEND (SPAZIO DI LAVORO) ---
@@ -215,10 +291,10 @@ app.use((req, res) => {
 });
 
 // --- AVVIO SERVER ---
-const port = 5000;
+const port = 5001; // USIAMO LA PORTA STABILE
 app.listen(port, () => {
     console.log(`Server Express in ascolto sulla porta ${port}`);
-    // Non serve più il log del frontendDistPath
+   
 });
 
 export default app;
